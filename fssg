@@ -1,0 +1,200 @@
+#!/bin/sh
+
+# fssg - Fast, Simple Static Site Generator
+
+# MIT License
+#
+# Copyright (c) xlc-dev 2025
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+# Description:
+# A lightweight POSIX-compliant static site generator that converts Markdown files
+# to HTML, applies templates, and copies static assets to create a website.
+#
+# Usage: ./build [options]
+#   Options:
+#     -h, --help     Display this help message
+#     -q, --quiet    Suppress all output except errors
+#     -v, --verbose  Show detailed build information
+#   Environment Variables:
+#     NO_COLOR       Disable colored output; set this to any value to make
+#                    output plain for better compatibility in non-terminal
+#                    environments (e.g., piping to another command).
+
+# Process command line options
+QUIET=0
+VERBOSE=0
+
+display_help() {
+  echo "${GREEN}fssg Help${NC}"
+  echo ""
+  echo "Usage: ./build [options]"
+  echo ""
+  echo "${YELLOW}Options:${NC}"
+  echo "  -h, --help     Display this help message"
+  echo "  -q, --quiet    Suppress all output except errors"
+  echo "  -v, --verbose  Show detailed build information"
+  echo ""
+  echo "${YELLOW}Environment Variables:${NC}"
+  echo "  NO_COLOR       Disable colored output. Set this to any value"
+  echo "                 (e.g., export NO_COLOR=1) for plain text output,"
+  echo "                 useful in non-terminal contexts."
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h|--help) display_help; exit 0 ;;
+    -q|--quiet) QUIET=1; VERBOSE=0; shift ;;
+    -v|--verbose) VERBOSE=1; QUIET=0; shift ;;
+    *) echo "Unknown option: $1" >&2; display_help; exit 1 ;;
+  esac
+done
+
+# Setup color codes if NO_COLOR is not set
+if [ -z "$NO_COLOR" ]; then
+  RED=$(printf '\033[0;31m')
+  GREEN=$(printf '\033[0;32m')
+  YELLOW=$(printf '\033[0;33m')
+  BLUE=$(printf '\033[0;34m')
+  NC=$(printf '\033[0m')
+else
+  RED=""; GREEN=""; YELLOW=""; BLUE=""; NC=""
+fi
+
+# Logging functions
+log() { [ $QUIET -eq 0 ] && printf "${GREEN}[INFO]${NC} %s\n" "$1"; }
+log_verbose() { [ $VERBOSE -eq 1 ] && printf "${BLUE}[DEBUG]${NC} %s\n" "$1"; }
+log_error() { printf "${RED}[ERROR]${NC} %s\n" "$1" >&2; }
+log_warning() { [ $QUIET -eq 0 ] && printf "${YELLOW}[WARNING]${NC} %s\n" "$1" >&2; }
+
+# Check for markdown command
+if ! command -v markdown >/dev/null 2>&1; then
+  log_error "The 'markdown' command is not installed. Please install it first."
+  exit 1
+fi
+
+# Remove existing dist directory and create a new one
+rm -rf dist
+mkdir -p dist
+log_verbose "Created fresh dist directory"
+
+# Process includes in HTML files
+process_includes() {
+  file="$1"
+  output="$2"
+  temp_file=$(mktemp)
+
+  cat "$file" > "$temp_file"
+
+  # Look for include tags: <!-- INCLUDE: file.html -->
+  grep -o '<!-- INCLUDE: [^-]* -->' "$temp_file" | while read -r include_tag; do
+    include_file=$(echo "$include_tag" | sed 's/<!-- INCLUDE: \(.*\) -->/\1/')
+    include_path="src/includes/$include_file"
+
+    if [ -f "$include_path" ]; then
+      log_verbose "Including $include_path in $file"
+      sed_temp=$(mktemp)
+      awk -v tag="$include_tag" -v content="$(cat "$include_path")" \
+        '{gsub(tag, content); print}' "$temp_file" > "$sed_temp"
+      mv "$sed_temp" "$temp_file"
+    else
+      log_warning "Include file $include_path not found for $file"
+    fi
+  done
+
+  cat "$temp_file" > "$output"
+  rm -f "$temp_file"
+}
+
+# Apply template to HTML content with dynamic title
+apply_template() {
+  content_file="$1"
+  output_file="$2"
+  original_file="$3"
+  dynamic_title="$4"
+
+  template_file="src/template.html"
+
+  if [ -f "$template_file" ]; then
+    content_text=$(cat "$content_file")
+    awk -v content="$content_text" -v title="$dynamic_title" \
+      '{gsub(/\{\{content\}\}/, content); gsub(/\{\{title\}\}/, title); print}' \
+      "$template_file" > "$output_file"
+    log_verbose "Applied template $template_file to $output_file"
+  else
+    cp "$content_file" "$output_file"
+    log_verbose "No template found, using direct content"
+  fi
+}
+
+# Process markdown files
+find src -name "*.md" -type f | while read -r file; do
+  dirpart=$(dirname "$file" | sed "s|^src|dist|")
+  basefile=$(basename "$file" .md)
+  outputfile="$dirpart/$basefile.html"
+  mkdir -p "$dirpart"
+  log_verbose "Processing $file to $outputfile"
+
+  if markdown_content=$(markdown "$file"); then
+    # Generate dynamic title from base file name
+    dynamic_title=$(echo "$basefile" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2)); print}' OFS=" ")
+    echo "$markdown_content" > "$outputfile.tmp"  # Temp file for content
+    apply_template "$outputfile.tmp" "$outputfile" "$file" "$dynamic_title"
+    rm -f "$outputfile.tmp"
+
+    # Process includes in the output file
+    temp_output=$(mktemp)
+    cp "$outputfile" "$temp_output"
+    process_includes "$temp_output" "$outputfile"
+    rm -f "$temp_output"
+
+    log "Created $outputfile"
+  else
+    log_error "Failed to convert $file to HTML"
+  fi
+done
+
+# Process HTML files directly
+find src -name "*.html" -not -path "src/templates/*" -not -path "src/includes/*" \
+  | while read -r file; do
+  if [ "$file" = "src/template.html" ]; then
+    log_verbose "Skipping src/template.html as per configuration"
+    continue
+  fi
+
+  rel_path=${file#src/}
+  output_file="dist/$rel_path"
+  output_dir=$(dirname "$output_file")
+  mkdir -p "$output_dir"
+  log_verbose "Processing HTML file $file"
+  process_includes "$file" "$output_file"
+  log "Created $output_file"
+done
+
+# Copy static files
+if [ -d "src/static" ]; then
+  mkdir -p dist/static
+  cp -R src/static/* dist/static/ 2>/dev/null
+  log "Copied static files from src/static/ to dist/static/"
+else
+  log_warning "No src/static/ directory found"
+fi
+
+log "${GREEN}Build complete!${NC} Check the dist directory."
