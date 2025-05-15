@@ -26,48 +26,29 @@
 
 # Description:
 # A lightweight POSIX-compliant static site generator that converts Markdown files
-# to HTML, applies templates, and copies static assets to create a website.
+# to HTML, applies a template, and copies static assets to create a website.
 #
-# Usage: ./build [options]
+# Usage: ./fssg [options]  (or ./your_script_name [options])
 #   Options:
 #     -h, --help     Display this help message
 #     -q, --quiet    Suppress all output except errors
 #     -v, --verbose  Show detailed build information
+#     -j, --jobs     Number of background jobs to run (default: 4)
 #   Environment Variables:
-#     NO_COLOR       Disable colored output; set this to any value to make
-#                    output plain for better compatibility in non-terminal
-#                    environments (e.g., piping to another command).
+#     NO_COLOR       Disable colored output.
+#     QUIET          Suppress all output except errors
+#     VERBOSE        Show detailed build information
+#     MAX_JOBS       Maximum number of background jobs to run
 
-# Process command line options
+# Default settings
 QUIET=0
 VERBOSE=0
+MAX_JOBS=4
 
-display_help() {
-  echo "${GREEN}fssg Help${NC}"
-  echo ""
-  echo "Usage: ./build [options]"
-  echo ""
-  echo "${YELLOW}Options:${NC}"
-  echo "  -h, --help     Display this help message"
-  echo "  -q, --quiet    Suppress all output except errors"
-  echo "  -v, --verbose  Show detailed build information"
-  echo ""
-  echo "${YELLOW}Environment Variables:${NC}"
-  echo "  NO_COLOR       Disable colored output. Set this to any value"
-  echo "                 (e.g., export NO_COLOR=1) for plain text output,"
-  echo "                 useful in non-terminal contexts."
-}
+# Internal variables
+JOB_COUNT=0
 
-while [ $# -gt 0 ]; do
-  case "$1" in
-    -h|--help) display_help; exit 0 ;;
-    -q|--quiet) QUIET=1; VERBOSE=0; shift ;;
-    -v|--verbose) VERBOSE=1; QUIET=0; shift ;;
-    *) echo "Unknown option: $1" >&2; display_help; exit 1 ;;
-  esac
-done
-
-# Setup color codes if NO_COLOR is not set
+# Color setup (only if NO_COLOR is unset)
 if [ -z "$NO_COLOR" ]; then
   RED=$(printf '\033[0;31m')
   GREEN=$(printf '\033[0;32m')
@@ -79,122 +60,786 @@ else
 fi
 
 # Logging functions
-log() { [ $QUIET -eq 0 ] && printf "${GREEN}[INFO]${NC} %s\n" "$1"; }
-log_verbose() { [ $VERBOSE -eq 1 ] && printf "${BLUE}[DEBUG]${NC} %s\n" "$1"; }
+log() { [ "$QUIET" -eq 0 ] && printf "${GREEN}[INFO]${NC} %s\n" "$1"; }
+log_verbose() { [ "$VERBOSE" -eq 1 ] && printf "${BLUE}[DEBUG]${NC} %s\n" "$1"; }
+log_warning() { [ "$QUIET" -eq 0 ] && printf "${YELLOW}[WARNING]${NC} %s\n" "$1" >&2; }
 log_error() { printf "${RED}[ERROR]${NC} %s\n" "$1" >&2; }
-log_warning() { [ $QUIET -eq 0 ] && printf "${YELLOW}[WARNING]${NC} %s\n" "$1" >&2; }
 
-# Check for markdown command
-if ! command -v markdown >/dev/null 2>&1; then
-  log_error "The 'markdown' command is not installed. Please install it first."
-  exit 1
-fi
-
-# Remove existing dist directory and create a new one
-rm -rf dist
-mkdir -p dist
-log_verbose "Created fresh dist directory"
-
-# Process includes in HTML files
-process_includes() {
-  file="$1"
-  output="$2"
-  temp_file=$(mktemp)
-
-  cat "$file" > "$temp_file"
-
-  # Look for include tags: <!-- INCLUDE: file.html -->
-  grep -o '<!-- INCLUDE: [^-]* -->' "$temp_file" | while read -r include_tag; do
-    include_file=$(echo "$include_tag" | sed 's/<!-- INCLUDE: \(.*\) -->/\1/')
-    include_path="src/includes/$include_file"
-
-    if [ -f "$include_path" ]; then
-      log_verbose "Including $include_path in $file"
-      sed_temp=$(mktemp)
-      awk -v tag="$include_tag" -v content="$(cat "$include_path")" \
-        '{gsub(tag, content); print}' "$temp_file" > "$sed_temp"
-      mv "$sed_temp" "$temp_file"
-    else
-      log_warning "Include file $include_path not found for $file"
-    fi
+# Wait for a job slot
+wait_for_slot() {
+  while [ "$JOB_COUNT" -ge "$MAX_JOBS" ]; do
+    wait -n  # Wait for any background job to finish
+    JOB_COUNT=$((JOB_COUNT - 1))  # Decrement after a job finishes
   done
-
-  cat "$temp_file" > "$output"
-  rm -f "$temp_file"
 }
 
-# Apply template to HTML content with dynamic title
+# Display usage instructions
+display_help() {
+  echo "${GREEN}fssg Help${NC}"
+  echo ""
+  echo "Usage: $0 [options]"
+  echo ""
+  echo "${YELLOW}Options:${NC}"
+  echo "  -h, --help     Display this help message"
+  echo "  -q, --quiet    Suppress all output except errors"
+  echo "  -v, --verbose  Show detailed build information"
+  echo "  -j, --jobs     Number of background jobs to run (default: 4)"
+  echo ""
+  echo "${YELLOW}Environment Variables:${NC}"
+  echo "  NO_COLOR       Disable colored output (set to any value)"
+  echo "  QUIET          Suppress all output except errors (1 to enable)"
+  echo "  VERBOSE        Show detailed build information (1 to enable)"
+  echo "  MAX_JOBS       Maximum number of background jobs to run (default: 4)"
+  echo ""
+  echo "For more information, see https://github.com/xlc-dev/fssg"
+}
+
+# Parse command-line options
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h|--help) display_help; exit 0 ;;
+    -q|--quiet) QUIET=1; VERBOSE=0; shift ;;
+    -v|--verbose) VERBOSE=1; QUIET=0; shift ;;
+    -j|--jobs) MAX_JOBS="$2"; shift 2 ;;
+    *) log_error "Unknown option: $1"; display_help; exit 1 ;;
+  esac
+done
+
+# Prepare output directory
+rm -rf dist 2>/dev/null
+mkdir -p dist
+log_verbose "Created fresh 'dist' directory."
+
+# Hoist <style> blocks to <head>
+process_styles() {
+  infile="$1"
+  outfile="$2"
+  log_verbose "Processing styles for $infile"
+
+  # Extract all <style> blocks, deduplicate, and store in $outfile.styles
+  awk '
+    BEGIN { in_style=0; style=""; n=0 }
+    /<[sS][tT][yY][lL][eE][^>]*>/ { in_style=1; style=$0; next }
+    in_style {
+      style=style "\n" $0
+      if ($0 ~ /<\/[sS][tT][yY][lL][eE]>/) {
+        in_style=0
+        # Deduplicate
+        for (i=1;i<=n;i++) if (styles[i]==style) break
+        if (i>n) { styles[++n]=style }
+        style=""
+      }
+      next
+    }
+    END { for (i=1;i<=n;i++) print styles[i] }
+  ' "$infile" > "$outfile.styles"
+
+  # Remove all <style> blocks from body
+  sed '/<[sS][tT][yY][lL][eE][^>]*>/,/<\/[sS][tT][yY][lL][eE]>/d' "$infile" > "$outfile.body"
+
+  # Insert unique styles before </head>
+  awk -v styles_file="$outfile.styles" '
+    BEGIN {
+      n = 0; while ((getline line < styles_file) > 0) styles[n++] = line; close(styles_file)
+    }
+    /<\/[hH][eE][aA][dD]>/ && !done { for (i = 0; i < n; i++) print styles[i]; done = 1 }
+    { print }
+  ' "$outfile.body" > "$outfile"
+
+  rm -f "$outfile.styles" "$outfile.body"
+  log_verbose "Finished hoisting unique styles into $outfile"
+}
+
+# Hoist <script> blocks to end of <body>
+process_scripts() {
+  infile="$1"
+  outfile="$2"
+  log_verbose "Processing scripts for $infile"
+
+  # Extract all <script> blocks, deduplicate, and store in $outfile.scripts
+  awk '
+    BEGIN { in_script=0; script=""; n=0 }
+    /<[sS][cC][rR][iI][pP][tT][^>]*>/ { in_script=1; script=$0; next }
+    in_script {
+      script=script "\n" $0
+      if ($0 ~ /<\/[sS][cC][rR][iI][pP][tT]>/) {
+        in_script=0
+        # Deduplicate
+        for (i=1;i<=n;i++) if (scripts[i]==script) break
+        if (i>n) { scripts[++n]=script }
+        script=""
+      }
+      next
+    }
+    END { for (i=1;i<=n;i++) print scripts[i] }
+  ' "$infile" > "$outfile.scripts"
+
+  # Remove all <script> blocks from body
+  sed '/<[sS][cC][rR][iI][pP][tT][^>]*>/,/<\/[sS][cC][rR][iI][pP][tT]>/d' "$infile" > "$outfile.body"
+
+  # Insert unique scripts before </body>
+  awk -v scripts_file="$outfile.scripts" '
+    BEGIN {
+      n = 0; while ((getline line < scripts_file) > 0) scripts[n++] = line; close(scripts_file)
+    }
+    /<\/[bB][oO][dD][yY]>/ && !done { for (i = 0; i < n; i++) print scripts[i]; done = 1 }
+    { print }
+  ' "$outfile.body" > "$outfile"
+
+  rm -f "$outfile.scripts" "$outfile.body"
+  log_verbose "Finished hoisting unique scripts into $outfile"
+}
+
+# Process {{include:...}} and {{include-block:...}} directives
+process_includes() {
+  in_file="$1"
+  out_file="$2"
+
+  awk -v INC_DIR="src/includes" -v AWK_VERBOSE="$VERBOSE" '
+    function trim(s) { gsub(/^[[:space:]]+|[[:space:]]+$/, "", s); return s }
+    function load_template(fp, arr, n, line) {
+      n = 0; while ((getline line < fp) > 0) arr[++n] = line; close(fp); return n
+    }
+    function render(arr, n, params_arr, block_content, i, key, l, outl, rest, p, pre, post, clen) {
+      clen = length("{{content}}")
+      for (i = 1; i <= n; i++) {
+        l = arr[i]; for (key in params_arr) gsub("{{" key "}}", params_arr[key], l)
+        outl = ""; rest = l
+        while ((p = index(rest, "{{content}}")) > 0) {
+          pre = substr(rest, 1, p - 1); post = substr(rest, p + clen)
+          outl = outl pre block_content; rest = post
+        }
+        print outl rest
+      }
+    }
+    function parse_tag(fulltag, s, params_str, key, value, eq_pos, val_start, quote_char, quote_end_offset) {
+      s = trim(fulltag); gsub(/&quot;/, "\"", s); gsub(/&#39;/, "\047", s); gsub(/&amp;/, "&", s)
+      gsub(/\n/, " ", s); gsub(/\r/, "", s);
+      sub(/^.*include-block[[:space:]]*:/, "", s)
+      s = trim(s)
+      sub(/\}\}.*$/, "", s); s = trim(s)
+
+      if (match(s, /^[^[:space:]]+/)) {
+        filename = substr(s, RSTART, RLENGTH)
+        params_str = trim(substr(s, RSTART + RLENGTH))
+      } else {
+        filename = ""
+        params_str = ""
+        if (s && AWK_VERBOSE) print "awk: Warning: No filename in tag: " s > "/dev/stderr"
+      }
+      delete params
+      while (params_str) {
+        eq_pos = index(params_str, "=")
+        if (eq_pos <= 1) {
+          if (AWK_VERBOSE) print "awk: Warning: Malformed param string: " params_str > "/dev/stderr"
+          break
+        }
+        key = trim(substr(params_str, 1, eq_pos - 1))
+        quote_char = substr(params_str, eq_pos + 1, 1)
+        if (quote_char != "\"" && quote_char != "\047") {
+            if (AWK_VERBOSE) print "awk: Warning: Parameter value not quoted: " params_str > "/dev/stderr"
+            if (match(substr(params_str, eq_pos + 1), /[[:space:]]+/)) {
+                value = substr(params_str, eq_pos + 1, RSTART -1)
+                params_str = trim(substr(params_str, eq_pos + 1 + RLENGTH))
+            } else {
+                value = substr(params_str, eq_pos + 1)
+                params_str = ""
+            }
+        } else {
+            val_start = eq_pos + 2
+            quote_end_offset = index(substr(params_str, val_start), quote_char)
+            if (!quote_end_offset) {
+              if (AWK_VERBOSE) print "awk: Warning: Missing closing quote for " quote_char " in: " params_str > "/dev/stderr"
+              break
+            }
+            value = substr(params_str, val_start, quote_end_offset - 1)
+            params_str = trim(substr(params_str, val_start + quote_end_offset))
+        }
+        params[key] = value
+      }
+    }
+
+    BEGIN { state = 0; tag_accumulator = "" }
+
+    {
+      current_line = $0
+
+      if (state == 0) {
+        processed_line = ""
+        unprocessed_part = current_line
+        while (match(unprocessed_part, /\{\{\s*include:[^}]*\}\}/)) {
+          processed_line = processed_line substr(unprocessed_part, 1, RSTART - 1)
+          inc_tag = substr(unprocessed_part, RSTART, RLENGTH)
+          unprocessed_part = substr(unprocessed_part, RSTART + RLENGTH)
+
+          f = inc_tag
+          sub(/^.*include[[:space:]]*:/, "", f); sub(/\}\}.*/, "", f); fname2 = trim(f)
+          path2 = INC_DIR "/" fname2
+
+          if (system("test -f \"" path2 "\"") == 0) {
+            include_content = ""
+            while ((getline il < path2) > 0) include_content = include_content il "\n"
+            close(path2)
+            if (length(include_content) > 0 && substr(include_content, length(include_content)) == "\n") {
+                include_content = substr(include_content, 1, length(include_content)-1)
+            }
+            processed_line = processed_line include_content
+          } else {
+            if (AWK_VERBOSE) print "awk: Error: File not found for include: " path2 > "/dev/stderr"
+            processed_line = processed_line inc_tag
+          }
+        }
+        current_line = processed_line unprocessed_part
+
+        if (current_line ~ /\{\{\s*include-block:/) {
+          tag_accumulator = current_line
+          if (current_line !~ /\}\}/) {
+            state = 1
+          } else {
+            parse_tag(tag_accumulator)
+            if (tag_accumulator ~ /\{\{\s*endinclude\s*\}\}/) {
+              if (filename) {
+                path3 = INC_DIR "/" filename
+                if (system("test -f \"" path3 "\"") == 0) {
+                  tn = load_template(path3, tpl); render(tpl, tn, params, "")
+                } else if (AWK_VERBOSE) print "awk: Error: Template file not found: " path3 > "/dev/stderr"
+              } else if (AWK_VERBOSE) print "awk: Error: No filename parsed for include-block." > "/dev/stderr"
+              content = ""; filename = ""; delete params; state = 0
+            } else {
+              content = ""; state = 2
+            }
+          }
+          next
+        }
+        print current_line
+        next
+      }
+
+      if (state == 1) {
+        tag_accumulator = tag_accumulator " " trim(current_line)
+        if (tag_accumulator ~ /\}\}/) {
+          parse_tag(tag_accumulator)
+          if (tag_accumulator ~ /\{\{\s*endinclude\s*\}\}/) {
+            if (filename) {
+              path3 = INC_DIR "/" filename
+              if (system("test -f \"" path3 "\"") == 0) {
+                tn = load_template(path3, tpl); render(tpl, tn, params, "")
+              } else if (AWK_VERBOSE) print "awk: Error: Template file not found: " path3 > "/dev/stderr"
+            } else if (AWK_VERBOSE) print "awk: Error: No filename parsed for include-block." > "/dev/stderr"
+            content = ""; filename = ""; delete params; state = 0
+          } else {
+            content = ""; state = 2
+          }
+        }
+        next
+      }
+
+      if (state == 2) {
+        if (current_line ~ /\{\{\s*endinclude/) {
+          if (filename) {
+            path3 = INC_DIR "/" filename
+            if (system("test -f \"" path3 "\"") == 0) {
+              tn = load_template(path3, tpl); render(tpl, tn, params, content)
+            } else if (AWK_VERBOSE) print "awk: Error: Template file not found: " path3 > "/dev/stderr"
+          } else if (AWK_VERBOSE) print "awk: Error: No filename parsed for include-block (state 2)." > "/dev/stderr"
+          content = ""; filename = ""; delete params; state = 0
+        } else {
+          content = content current_line "\n"
+        }
+        next
+      }
+    }
+  ' "$in_file" > "$out_file"
+}
+
+# Apply main HTML template
 apply_template() {
   content_file="$1"
   output_file="$2"
-  original_file="$3"
-  dynamic_title="$4"
+  title_val="$3"
+  template_path="src/template.html"
 
-  template_file="src/template.html"
+  if [ -f "$template_path" ]; then
+    awk -v template_title_value="$title_val" -v content_filepath="$content_file" '
+      BEGIN {
+        page_content_line_count = 0
+        while ((getline line < content_filepath) > 0) {
+          page_content_array[++page_content_line_count] = line
+        }
+        close(content_filepath)
 
-  if [ -f "$template_file" ]; then
-    content_text=$(cat "$content_file")
-    awk -v content="$content_text" -v title="$dynamic_title" \
-      '{gsub(/\{\{content\}\}/, content); gsub(/\{\{title\}\}/, title); print}' \
-      "$template_file" > "$output_file"
-    log_verbose "Applied template $template_file to $output_file"
+        CONTENT_TAG = "{{content}}"
+        CONTENT_TAG_LEN = length(CONTENT_TAG)
+        TITLE_TAG = "{{title}}"
+      }
+      {
+        current_template_line = $0
+        gsub(TITLE_TAG, template_title_value, current_template_line)
+
+        output_for_this_template_line = ""
+        remaining_part_of_template_line = current_template_line
+
+        while ( (tag_position = index(remaining_part_of_template_line, CONTENT_TAG)) > 0 ) {
+          printf "%s", substr(remaining_part_of_template_line, 1, tag_position - 1)
+          for (k = 1; k <= page_content_line_count; k++) {
+            print page_content_array[k]
+          }
+          remaining_part_of_template_line = substr(remaining_part_of_template_line, tag_position + CONTENT_TAG_LEN)
+        }
+        print remaining_part_of_template_line
+      }
+    ' "$template_path" > "$output_file"
+    log_verbose "Applied template to $output_file (title=\"$template_title_value\")"
   else
     cp "$content_file" "$output_file"
-    log_verbose "No template found, using direct content"
+    log_verbose "No template found; copied raw content to $output_file"
   fi
 }
 
-# Process markdown files
-find src -name "*.md" -type f | while read -r file; do
-  dirpart=$(dirname "$file" | sed "s|^src|dist|")
-  basefile=$(basename "$file" .md)
-  outputfile="$dirpart/$basefile.html"
-  mkdir -p "$dirpart"
-  log_verbose "Processing $file to $outputfile"
+# Process conditionals IF_PAGE and IF_EXT
+process_conditionals() {
+  input_file="$1"
+  output_file="$2"
+  current_page_arg="$3"
+  current_ext_arg="$4"
 
-  if markdown_content=$(markdown "$file"); then
-    # Generate dynamic title from base file name
-    dynamic_title=$(echo "$basefile" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2)); print}' OFS=" ")
-    echo "$markdown_content" > "$outputfile.tmp"  # Temp file for content
-    apply_template "$outputfile.tmp" "$outputfile" "$file" "$dynamic_title"
-    rm -f "$outputfile.tmp"
+  awk -v current_page="$current_page_arg" \
+      -v current_ext="$current_ext_arg" \
+      -v AWK_VERBOSE="$VERBOSE" '
+    function trim(s) { sub(/^[ \t\r\n]+/, "", s); sub(/[ \t\r\n]+$/, "", s); return s }
+    BEGIN {
+      depth = 0
+      print_ok[0]   = 1
+      branch_taken[0] = 0
+    }
 
-    # Process includes in the output file
-    temp_output=$(mktemp)
-    cp "$outputfile" "$temp_output"
-    process_includes "$temp_output" "$outputfile"
-    rm -f "$temp_output"
+    /\{\{IF_EXT:[[:space:]]*/ {
+      original_line = $0
+      line = $0; sub(/.*\{\{IF_EXT:[[:space:]]*/, "", line); sub(/[[:space:]]*\}\}.*/, "", line); target = trim(line)
+      depth++
+      is_condition_met = (target == current_ext)
+      print_ok[depth] = print_ok[depth-1] && is_condition_met
+      branch_taken[depth] = 0
+      if (print_ok[depth]) {
+          branch_taken[depth] = 1
+      }
+      next
+    }
+    /\{\{ELIF_EXT:[[:space:]]*/ {
+      original_line = $0
+      line = $0; sub(/.*\{\{ELIF_EXT:[[:space:]]*/, "", line); sub(/[[:space:]]*\}\}.*/, "", line); target = trim(line)
+      is_condition_met = (target == current_ext)
+      can_take_branch = print_ok[depth-1] && !branch_taken[depth]
+      print_ok[depth] = can_take_branch && is_condition_met
+      if (print_ok[depth]) {
+          branch_taken[depth] = 1
+      }
+      next
+    }
+    /\{\{ELSE_EXT\}\}/ {
+      original_line = $0
+      can_take_branch = print_ok[depth-1] && !branch_taken[depth]
+      print_ok[depth] = can_take_branch
+      if (print_ok[depth]) {
+          branch_taken[depth] = 1
+      }
+      next
+    }
+    /\{\{ENDIF_EXT\}\}/ {
+      original_line = $0
+      depth--
+      next
+    }
 
-    log "Created $outputfile"
-  else
-    log_error "Failed to convert $file to HTML"
-  fi
-done
+    /\{\{IF_PAGE:[[:space:]]*/ {
+      original_line = $0
+      line = $0; sub(/.*\{\{IF_PAGE:[[:space:]]*/, "", line); sub(/[[:space:]]*\}\}.*/, "", line); target = trim(line)
+      depth++
+      is_condition_met = (target == current_page)
+      print_ok[depth] = print_ok[depth-1] && is_condition_met
+      branch_taken[depth] = 0
+      if (print_ok[depth]) {
+          branch_taken[depth] = 1
+      }
+      next
+    }
+    /\{\{ELIF_PAGE:[[:space:]]*/ {
+      original_line = $0
+      line = $0; sub(/.*\{\{ELIF_PAGE:[[:space:]]*/, "", line); sub(/[[:space:]]*\}\}.*/, "", line); target = trim(line)
+      is_condition_met = (target == current_page)
+      can_take_branch = print_ok[depth-1] && !branch_taken[depth]
+      print_ok[depth] = can_take_branch && is_condition_met
+      if (print_ok[depth]) {
+          branch_taken[depth] = 1
+      }
+      next
+    }
+    /\{\{ELSE_PAGE\}\}/ {
+      original_line = $0
+      can_take_branch = print_ok[depth-1] && !branch_taken[depth]
+      print_ok[depth] = can_take_branch
+      if (print_ok[depth]) {
+          branch_taken[depth] = 1
+      }
+      next
+    }
+    /\{\{ENDIF_PAGE\}\}/ {
+      original_line = $0
+      depth--
+      next
+    }
 
-# Process HTML files directly
-find src -name "*.html" -not -path "src/templates/*" -not -path "src/includes/*" \
-  | while read -r file; do
-  if [ "$file" = "src/template.html" ]; then
-    log_verbose "Skipping src/template.html as per configuration"
+    {
+      if (print_ok[depth]) {
+        print
+      }
+    }
+  ' "$input_file" > "$output_file"
+
+  log_verbose "Applied conditionals for page=\"$current_page_arg\" ext=\"$current_ext_arg\""
+}
+
+# Parse markdown file. No, XSS isn't a problem here, since this is a SSG :)
+parse_markdown() {
+  awk '
+    function process_inline(text, pre, post, rep, m, a, b, c) {
+      # Links: [text](url)
+      while (match(text, /\[[^]]+\]\([^)]*\)/)) {
+        pre = substr(text, 1, RSTART-1)
+        m = substr(text, RSTART, RLENGTH)
+        post = substr(text, RSTART+RLENGTH)
+        a = index(m, "](")
+        b = substr(m, 2, a-2)
+        c = substr(m, a+2, length(m)-a-2)
+        if (substr(c, length(c), 1) == ")") c = substr(c, 1, length(c)-1)
+        rep = "<a href=\"" c "\">" b "</a>"
+        text = pre rep post
+      }
+      # Bold+italic: ***text*** or ___text___
+      while (match(text, /\*\*\*[^*]+\*\*\*/)) {
+        pre = substr(text, 1, RSTART-1)
+        m = substr(text, RSTART, RLENGTH)
+        post = substr(text, RSTART+RLENGTH)
+        b = substr(m, 4, length(m)-6)
+        rep = "<strong><em>" b "</em></strong>"
+        text = pre rep post
+      }
+      while (match(text, /___[^_]+___/)) {
+        pre = substr(text, 1, RSTART-1)
+        m = substr(text, RSTART, RLENGTH)
+        post = substr(text, RSTART+RLENGTH)
+        b = substr(m, 4, length(m)-6)
+        rep = "<strong><em>" b "</em></strong>"
+        text = pre rep post
+      }
+      # Bold: **text** or __text__
+      while (match(text, /\*\*[^*]+\*\*/)) {
+        pre = substr(text, 1, RSTART-1)
+        m = substr(text, RSTART, RLENGTH)
+        post = substr(text, RSTART+RLENGTH)
+        b = substr(m, 3, length(m)-4)
+        rep = "<strong>" b "</strong>"
+        text = pre rep post
+      }
+      while (match(text, /__[^_]+__/)) {
+        pre = substr(text, 1, RSTART-1)
+        m = substr(text, RSTART, RLENGTH)
+        post = substr(text, RSTART+RLENGTH)
+        b = substr(m, 3, length(m)-4)
+        rep = "<strong>" b "</strong>"
+        text = pre rep post
+      }
+      # Italic: *text* or _text_
+      while (match(text, /\*[^*]+\*/)) {
+        if (RSTART > 1 && substr(text, RSTART-1, 1) == "*") break
+        if (substr(text, RSTART, 2) == "**") break
+        pre = substr(text, 1, RSTART-1)
+        m = substr(text, RSTART, RLENGTH)
+        post = substr(text, RSTART+RLENGTH)
+        b = substr(m, 2, length(m)-2)
+        rep = "<em>" b "</em>"
+        text = pre rep post
+      }
+      while (match(text, /_[^_]+_/)) {
+        if (RSTART > 1 && substr(text, RSTART-1, 1) == "_") break
+        if (substr(text, RSTART, 2) == "__") break
+        pre = substr(text, 1, RSTART-1)
+        m = substr(text, RSTART, RLENGTH)
+        post = substr(text, RSTART+RLENGTH)
+        b = substr(m, 2, length(m)-2)
+        rep = "<em>" b "</em>"
+        text = pre rep post
+      }
+      # Strikethrough: ~~text~~
+      while (match(text, /~~[^~]+~~/)) {
+        pre = substr(text, 1, RSTART-1)
+        m = substr(text, RSTART, RLENGTH)
+        post = substr(text, RSTART+RLENGTH)
+        b = substr(m, 3, length(m)-4)
+        rep = "<del>" b "</del>"
+        text = pre rep post
+      }
+      return text
+    }
+
+    BEGIN {
+      in_table = 0
+      in_thead = 0
+      in_tbody = 0
+      in_template_block = 0
+    }
+
+    # Template block start (anywhere in line)
+    index($0, "{{include-block:") {
+      in_template_block = 1
+      print $0
+      next
+    }
+    # Template block end (anywhere in line)
+    index($0, "{{endinclude}}") {
+      print $0
+      in_template_block = 0
+      next
+    }
+    # Inside template block: print as-is
+    in_template_block { print $0; next }
+
+    # Single-line template
+    $0 ~ /^\{\{.*\}\}$/ { print $0; next }
+
+    # HTML passthrough, but process inline markdown
+    $0 ~ /^[ \t]*<.*>[ \t]*$/ {
+      html_line = $0
+      if (html_line ~ /\[[^]]+\]\([^)]*\)/ || html_line ~ /\*\*|__|~~|_|\*/) {
+        print process_inline(html_line)
+      } else {
+        print html_line
+      }
+      next
+    }
+
+    # Table row
+    $0 ~ /^\|/ {
+      line = $0
+      sub(/^[ \t]*\|/, "", line)
+      sub(/\|[ \t]*$/, "", line)
+      n = split(line, cols, /\|/)
+      is_sep = 1
+      for (i = 1; i <= n; i++) {
+        if (cols[i] !~ /^[ \t]*-+[ \t]*$/) is_sep = 0
+      }
+      if (!in_table) {
+        print "<table>"
+        in_table = 1
+        in_thead = 1
+        print "<thead>"
+      }
+      if (is_sep) {
+        if (in_thead) {
+          print "</thead>"
+          print "<tbody>"
+          in_thead = 0
+          in_tbody = 1
+        }
+        next
+      }
+      row = ""
+      for (i = 1; i <= n; i++) {
+        cell = process_inline(cols[i])
+        if (in_thead) {
+          row = row "<th>" cell "</th>"
+        } else {
+          row = row "<td>" cell "</td>"
+        }
+      }
+      print "<tr>" row "</tr>"
+      next
+    }
+
+    # End table if not in table and line is not a table
+    {
+      if (in_table && $0 !~ /^\|/) {
+        if (in_tbody) print "</tbody>"
+        else if (in_thead) print "</thead>"
+        print "</table>"
+        in_table = 0
+        in_thead = 0
+        in_tbody = 0
+      }
+    }
+
+    # Headers
+    $0 ~ /^###### / { sub(/^###### /, "", $0); print "<h6>" process_inline($0) "</h6>"; next }
+    $0 ~ /^##### / { sub(/^##### /, "", $0); print "<h5>" process_inline($0) "</h5>"; next }
+    $0 ~ /^#### / { sub(/^#### /, "", $0); print "<h4>" process_inline($0) "</h4>"; next }
+    $0 ~ /^### / { sub(/^### /, "", $0); print "<h3>" process_inline($0) "</h3>"; next }
+    $0 ~ /^## / { sub(/^## /, "", $0); print "<h2>" process_inline($0) "</h2>"; next }
+    $0 ~ /^# / { sub(/^# /, "", $0); print "<h1>" process_inline($0) "</h1>"; next }
+
+    # Horizontal rule
+    $0 ~ /^---$/ { print "<hr>"; next }
+    $0 ~ /^___$/ { print "<hr>"; next }
+    $0 ~ /^\*\*\*$/ { print "<hr>"; next }
+
+    # Empty lines
+    $0 ~ /^[ \t]*$/ { print ""; next }
+
+    # Regular paragraphs
+    { print "<p>" process_inline($0) "</p>" }
+
+    END {
+      if (in_table) {
+        if (in_tbody) print "</tbody>"
+        else if (in_thead) print "</thead>"
+        print "</table>"
+      }
+    }
+  '
+}
+
+# Main processing loop for source files
+while IFS= read -r file; do
+  JOB_COUNT=$((JOB_COUNT + 1))
+  wait_for_slot
+  (
+  ext="${file##*.}"
+  rel_path="${file#src/}"
+  out_file="dist/${rel_path%.*}.html"
+  mkdir -p "$(dirname "$out_file")"
+  log_verbose "Processing $file → $out_file (intended final name)"
+
+  base_name=$(basename "$file" ."$ext")
+  dynamic_title=$(printf '%s\n' "$base_name" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2)); print}')
+
+  temp_raw_content="$out_file.tmp-raw"
+  case "$ext" in
+    md)
+      if ! parse_markdown <"$file" >"$temp_raw_content" 2>"$out_file.md-err"; then
+        log_warning "Custom Markdown conversion failed for $file. Error: $(cat "$out_file.md-err") Skipping."
+        rm -f "$temp_raw_content" "$out_file.md-err"
+        continue
+      fi
+      rm -f "$out_file.md-err"
+      ;;
+    html) cp "$file" "$temp_raw_content" ;;
+  esac
+
+  if [ ! -f "$temp_raw_content" ]; then
+    log_warning "Temporary raw file $temp_raw_content not found for $file. Skipping."
     continue
   fi
 
-  rel_path=${file#src/}
-  output_file="dist/$rel_path"
-  output_dir=$(dirname "$output_file")
-  mkdir -p "$output_dir"
-  log_verbose "Processing HTML file $file"
-  process_includes "$file" "$output_file"
-  log "Created $output_file"
-done
+  current_content_for_directives="$out_file.tmp-directives-processed"
+  awk '
+    BEGIN {
+      in_comment = 0
+      disabled_open_brace = "{^{"
+      disabled_close_brace = "}^}"
+    }
+    {
+      current_line_text = $0
+      output_buffer = ""
+      while (length(current_line_text) > 0) {
+        if (in_comment) {
+          comment_end_pos = index(current_line_text, "-->")
+          if (comment_end_pos > 0) {
+            text_inside_comment = substr(current_line_text, 1, comment_end_pos - 1)
+            gsub(/\{\{/, disabled_open_brace, text_inside_comment)
+            gsub(/\}\}/, disabled_close_brace, text_inside_comment)
+            output_buffer = output_buffer text_inside_comment "-->"
+            current_line_text = substr(current_line_text, comment_end_pos + 3)
+            in_comment = 0
+          } else {
+            text_inside_comment = current_line_text
+            gsub(/\{\{/, disabled_open_brace, text_inside_comment)
+            gsub(/\}\}/, disabled_close_brace, text_inside_comment)
+            output_buffer = output_buffer text_inside_comment
+            current_line_text = ""
+          }
+        } else {
+          comment_start_pos = index(current_line_text, "<!--")
+          if (comment_start_pos > 0) {
+            text_before_comment = substr(current_line_text, 1, comment_start_pos - 1)
+            output_buffer = output_buffer text_before_comment "<!--"
+            current_line_text = substr(current_line_text, comment_start_pos + 4)
+            in_comment = 1
+          } else {
+            output_buffer = output_buffer current_line_text
+            current_line_text = ""
+          }
+        }
+      }
+      print output_buffer
+    }
+  ' "$temp_raw_content" > "$current_content_for_directives"
+  rm -f "$temp_raw_content"
 
-# Copy static files
+  title_override=$(awk '
+    {
+      prefix_regex = "\\{\\{[[:space:]]*[Tt][Ii][Tt][Ll][Ee]:[[:space:]]*"
+
+      if (match($0, prefix_regex)) {
+        content_and_suffix = substr($0, RSTART + RLENGTH)
+
+        if (match(content_and_suffix, "\\}\\}")) {
+          title_val = substr(content_and_suffix, 1, RSTART - 1)
+          gsub(/^[[:space:]]+|[[:space:]]+$/, "", title_val)
+          print title_val
+          exit
+        }
+      }
+    }
+  ' "$current_content_for_directives")
+
+  temp_after_title_removal="$out_file.tmp-title-removed"
+  sed 's/{{[[:space:]]*[Tt][Ii][Tt][Ll][Ee]:[^}]*}}//g' "$current_content_for_directives" > "$temp_after_title_removal"
+  mv "$temp_after_title_removal" "$current_content_for_directives"
+
+  page_id="${rel_path%.*}.html"
+  current_title="${title_override:-$dynamic_title}"
+  log_verbose "Title for $page_id -> \"$current_title\""
+
+  temp_after_template="$out_file.tmp-template"
+  apply_template "$current_content_for_directives" "$temp_after_template" "$current_title"
+  rm -f "$current_content_for_directives"
+
+  temp_after_conditionals="$out_file.tmp-cond"
+  process_conditionals "$temp_after_template" "$temp_after_conditionals" "$page_id" "$ext"
+  rm -f "$temp_after_template"
+
+  if [ ! -f "$temp_after_conditionals" ]; then
+    log_error "Conditional processing failed for $file. Output file $temp_after_conditionals not created."
+    rm -f "$current_content_for_directives" "$temp_after_template"
+    continue
+  fi
+
+  temp_after_includes="$out_file.tmp-includes"
+  process_includes "$temp_after_conditionals" "$temp_after_includes"
+  rm -f "$temp_after_conditionals"
+
+  temp_after_styles="$out_file.tmp-styles"
+  process_styles "$temp_after_includes" "$temp_after_styles"
+  rm -f "$temp_after_includes"
+
+  intended_final_filename="dist/${rel_path%.*}.html"
+  process_scripts "$temp_after_styles" "$intended_final_filename"
+  rm -f "$temp_after_styles"
+
+  log "Created $intended_final_filename"
+) &
+done < <(find src \( -path src/includes -o -name template.html \) -prune -o -type f \( -name '*.md' -o -name '*.html' \) -print)
+
+wait # Wait for all background jobs to finish
+JOB_COUNT=0 # Reset for any future use
+
+# Copy static assets
 if [ -d "src/static" ]; then
   mkdir -p dist/static
-  cp -R src/static/* dist/static/ 2>/dev/null
-  log "Copied static files from src/static/ to dist/static/"
+  cp -R src/static/* dist/static/ 2>/dev/null # Suppress errors for symlinks etc.
+  log "Copied static files to dist/static/"
 else
-  log_warning "No src/static/ directory found"
+  log_warning "No 'src/static/' directory found. Skipping static asset copy."
 fi
 
-log "${GREEN}Build complete!${NC} Check the dist directory."
+log "${GREEN}Build complete!${NC} Check the 'dist' directory."
+exit 0
