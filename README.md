@@ -1,8 +1,8 @@
 # fssg - Fast, Simple Static Site Generator
 
-## Description
-
-fssg is a lightweight and fast static site generator written in POSIX-compliant shell script. It converts Markdown files to HTML, applies a template, processes includes and conditionals in HTML files, hoists `<style>` and `<script>` blocks, and copies static assets to a `dist` directory. It's designed to be simple, fast, and easy to use for generating static websites.
+fssg is a lightweight and fast static site generator written in POSIX-compliant shell script.
+It converts Markdown files to HTML, applies a template, processes includes and conditionals in HTML files, hoists `<style>` and `<script>` blocks,
+copies static assets, and produces a `dist` directory with the generated site. It's designed to be simple, fast, and easy to use for generating static websites.
 
 ## Features
 
@@ -14,7 +14,7 @@ fssg is a lightweight and fast static site generator written in POSIX-compliant 
 - Hoists `<style>` blocks to `<head>` and `<script>` blocks to the end of `<body>`, deduplicating them.
 - Supports conditional directives: `{{IF_PAGE: file.html}}`, `{{ELIF_PAGE: file.html}}`, `{{ELSE_PAGE}}`, `{{ENDIF_PAGE}}`, and `{{IF_EXT: ext}}`, `{{ELIF_EXT: ext}}`, `{{ELSE_EXT}}`, `{{ENDIF_EXT}}`.
 - Copies static files from `src/static/` to `dist/static/`.
-- Handles `{{title: Custom Title}}` directives in source files to override default titles.
+- Handles `{{title: Custom Title}}` directives in source files to override default titles from filenames.
 
 ## Installation
 
@@ -24,7 +24,6 @@ fssg is a lightweight and fast static site generator written in POSIX-compliant 
 
 2. **Dependencies**:
    - Requires a POSIX-compliant shell (e.g., `sh`, `bash`).
-   - No external Markdown parser needed; uses a custom AWK-based parser.
    - Commands like `awk`, `sed`, `find`, and `cp` (standard in POSIX systems).
 
 ## Usage

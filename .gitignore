@@ -16,7 +16,6 @@ Desktop.ini
 *.bak
 *.old
 *.log
-.vscode/
 .idea/
 *.sublime-workspace
 *.code-workspace
