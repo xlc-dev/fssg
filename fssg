@@ -25,39 +25,32 @@
 # SOFTWARE.
 
 # Description:
-# A lightweight POSIX-compliant static site generator that converts Markdown files
-# to HTML, applies a template, and copies static assets to create a website.
+# fssg is a minimal, fast static site generator built with POSIX shell scripting.
+# It transforms Markdown and HTML files into a website by applying templates,
+# processing includes, conditionals, pagination, and recent events.
+# Static assets are copied automatically, producing a ready-to-deploy dist directory.
 #
 # Usage: ./fssg [options]  (or ./your_script_name [options])
 #   Options:
 #     -h, --help     Display this help message
 #     -q, --quiet    Suppress all output except errors
 #     -v, --verbose  Show detailed build information
+#     -n, --nocolor  Disable colored output
+#     -w, --watch    Watch for changes and rebuild automatically
+#     -s, --serve    Start a local Mongoose server for serving the dist directory
 #     -j, --jobs     Number of background jobs to run (default: 4)
-#   Environment Variables:
-#     NO_COLOR       Disable colored output.
-#     QUIET          Suppress all output except errors
-#     VERBOSE        Show detailed build information
-#     MAX_JOBS       Maximum number of background jobs to run
 
 # Default settings
 QUIET=0
 VERBOSE=0
 MAX_JOBS=4
+NO_COLOR=0
+WATCH=0
+SERVE=0
+OPEN_BROWSER=0
 
 # Internal variables
 JOB_COUNT=0
-
-# Color setup (only if NO_COLOR is unset)
-if [ -z "$NO_COLOR" ]; then
-  RED=$(printf '\033[0;31m')
-  GREEN=$(printf '\033[0;32m')
-  YELLOW=$(printf '\033[0;33m')
-  BLUE=$(printf '\033[0;34m')
-  NC=$(printf '\033[0m')
-else
-  RED=""; GREEN=""; YELLOW=""; BLUE=""; NC=""
-fi
 
 # Logging functions
 log() { [ "$QUIET" -eq 0 ] && printf "${GREEN}[INFO]${NC} %s\n" "$1"; }
@@ -83,13 +76,11 @@ display_help() {
   echo "  -h, --help     Display this help message"
   echo "  -q, --quiet    Suppress all output except errors"
   echo "  -v, --verbose  Show detailed build information"
+  echo "  -n, --nocolor  Disable colored output"
+  echo "  -w, --watch    Watch for changes in src/ and rebuild automatically"
+  echo "  -s, --serve    Start a local Mongoose server for serving the dist/ directory"
+  echo "  -o, --open     Open the browser automatically"
   echo "  -j, --jobs     Number of background jobs to run (default: 4)"
-  echo ""
-  echo "${YELLOW}Environment Variables:${NC}"
-  echo "  NO_COLOR       Disable colored output (set to any value)"
-  echo "  QUIET          Suppress all output except errors (1 to enable)"
-  echo "  VERBOSE        Show detailed build information (1 to enable)"
-  echo "  MAX_JOBS       Maximum number of background jobs to run (default: 4)"
   echo ""
   echo "For more information, see https://github.com/xlc-dev/fssg"
 }
@@ -100,15 +91,61 @@ while [ $# -gt 0 ]; do
     -h|--help) display_help; exit 0 ;;
     -q|--quiet) QUIET=1; VERBOSE=0; shift ;;
     -v|--verbose) VERBOSE=1; QUIET=0; shift ;;
+    -n|--nocolor) NO_COLOR=1; shift ;;
+    -w|--watch) WATCH=1; shift ;;
+    -s|--serve) SERVE=1; shift ;;
+    -o|--open) OPEN_BROWSER=1; shift ;;
     -j|--jobs) MAX_JOBS="$2"; shift 2 ;;
     *) log_error "Unknown option: $1"; display_help; exit 1 ;;
   esac
 done
 
+# Color setup
+if [ "$NO_COLOR" -eq 0 ]; then
+  RED=$(printf '\033[0;31m')
+  GREEN=$(printf '\033[0;32m')
+  YELLOW=$(printf '\033[0;33m')
+  BLUE=$(printf '\033[0;34m')
+  NC=$(printf '\033[0m')
+else
+  RED=""; GREEN=""; YELLOW=""; BLUE=""; NC=""
+fi
+
 # Prepare output directory
 rm -rf dist 2>/dev/null
 mkdir -p dist
 log_verbose "Created fresh 'dist' directory."
+
+# Start local Mongoose server
+start_mongoose() {
+  # Detect OS
+  case "$(uname -s)" in
+    CYGWIN*|MINGW*|MSYS*) MONGOOSE_BIN="./mongoose/mongoose_windows.exe" ;;
+    Linux*)     MONGOOSE_BIN="./mongoose/mongoose_linux" ;;
+    Darwin*)    MONGOOSE_BIN="./mongoose/mongoose_mac" ;;
+    *)          MONGOOSE_BIN="./mongoose/mongoose_linux" ;; # fallback
+  esac
+
+  if [ ! -x "$MONGOOSE_BIN" ]; then
+    log_error "Mongoose binary not found for your OS! Please add it to the repo root."
+    return 1
+  fi
+
+  ("$MONGOOSE_BIN" -d dist/ -v 0 &)
+  MONGOOSE_PID=$!
+  log "Mongoose server started at http://localhost:8000 (PID $MONGOOSE_PID)"
+}
+
+# Open the browser automatically
+open_browser() {
+  url="http://localhost:8000"
+  case "$(uname -s)" in
+    Darwin*) open "$url" ;;
+    Linux*)  xdg-open "$url" ;;
+    CYGWIN*|MINGW*|MSYS*) start "$url" ;;
+    *) echo "Please open $url in your browser." ;;
+  esac
+}
 
 # Hoist <style> blocks to <head>
 process_styles() {
@@ -259,95 +296,86 @@ process_includes() {
       }
     }
 
-    BEGIN { state = 0; tag_accumulator = "" }
+    BEGIN {
+      state = 0
+      tag_accumulator = ""
+      block_content = ""
+    }
 
     {
-      current_line = $0
+      line = $0
 
-      if (state == 0) {
-        processed_line = ""
-        unprocessed_part = current_line
-        while (match(unprocessed_part, /\{\{\s*include:[^}]*\}\}/)) {
-          processed_line = processed_line substr(unprocessed_part, 1, RSTART - 1)
-          inc_tag = substr(unprocessed_part, RSTART, RLENGTH)
-          unprocessed_part = substr(unprocessed_part, RSTART + RLENGTH)
-
-          f = inc_tag
-          sub(/^.*include[[:space:]]*:/, "", f); sub(/\}\}.*/, "", f); fname2 = trim(f)
-          path2 = INC_DIR "/" fname2
-
-          if (system("test -f \"" path2 "\"") == 0) {
-            include_content = ""
-            while ((getline il < path2) > 0) include_content = include_content il "\n"
-            close(path2)
-            if (length(include_content) > 0 && substr(include_content, length(include_content)) == "\n") {
-                include_content = substr(include_content, 1, length(include_content)-1)
-            }
-            processed_line = processed_line include_content
-          } else {
-            if (AWK_VERBOSE) print "awk: Error: File not found for include: " path2 > "/dev/stderr"
-            processed_line = processed_line inc_tag
-          }
-        }
-        current_line = processed_line unprocessed_part
-
-        if (current_line ~ /\{\{\s*include-block:/) {
-          tag_accumulator = current_line
-          if (current_line !~ /\}\}/) {
-            state = 1
-          } else {
-            parse_tag(tag_accumulator)
-            if (tag_accumulator ~ /\{\{\s*endinclude\s*\}\}/) {
-              if (filename) {
-                path3 = INC_DIR "/" filename
-                if (system("test -f \"" path3 "\"") == 0) {
-                  tn = load_template(path3, tpl); render(tpl, tn, params, "")
-                } else if (AWK_VERBOSE) print "awk: Error: Template file not found: " path3 > "/dev/stderr"
-              } else if (AWK_VERBOSE) print "awk: Error: No filename parsed for include-block." > "/dev/stderr"
-              content = ""; filename = ""; delete params; state = 0
-            } else {
-              content = ""; state = 2
-            }
-          }
-          next
-        }
-        print current_line
-        next
+      # Robustly match opening of any directive
+      if (state == 0 && match(line, /\{\{[[:space:]]*(include(-block)?|IF_|ELIF_|ELSE_|ENDIF_)/)) {
+        tag_accumulator = ""
+        block_content = ""
+        state = 1
       }
 
       if (state == 1) {
-        tag_accumulator = tag_accumulator " " trim(current_line)
+        tag_accumulator = tag_accumulator (tag_accumulator ? "\n" : "") line
+        # Check if closing braces are present (end of directive)
         if (tag_accumulator ~ /\}\}/) {
-          parse_tag(tag_accumulator)
-          if (tag_accumulator ~ /\{\{\s*endinclude\s*\}\}/) {
-            if (filename) {
-              path3 = INC_DIR "/" filename
-              if (system("test -f \"" path3 "\"") == 0) {
-                tn = load_template(path3, tpl); render(tpl, tn, params, "")
-              } else if (AWK_VERBOSE) print "awk: Error: Template file not found: " path3 > "/dev/stderr"
-            } else if (AWK_VERBOSE) print "awk: Error: No filename parsed for include-block." > "/dev/stderr"
-            content = ""; filename = ""; delete params; state = 0
-          } else {
-            content = ""; state = 2
+          # Single-line or multi-line directive complete
+          # Normalize whitespace for robust parsing
+          tag_norm = tag_accumulator
+          gsub(/\n/, " ", tag_norm)
+          gsub(/[[:space:]]+/, " ", tag_norm)
+          # Handle include
+          if (tag_norm ~ /\{\{[[:space:]]*include:[^}]+\}\}/) {
+            # Simple include
+            match(tag_norm, /\{\{[[:space:]]*include:[^}]+\}\}/)
+            inc_tag = substr(tag_norm, RSTART, RLENGTH)
+            f = inc_tag
+            sub(/^.*include[[:space:]]*:/, "", f); sub(/\}\}.*/, "", f); fname2 = trim(f)
+            path2 = INC_DIR "/" fname2
+            if (system("test -f \"" path2 "\"") == 0) {
+              while ((getline il < path2) > 0) print il
+              close(path2)
+            } else {
+              if (AWK_VERBOSE) print "awk: Error: File not found for include: " path2 > "/dev/stderr"
+              print inc_tag
+            }
+            state = 0
+            next
           }
+          # Handle include-block
+          if (tag_norm ~ /\{\{[[:space:]]*include-block:[^}]+\}\}/) {
+            # Start of include-block, now accumulate block content
+            parse_tag(tag_norm)
+            state = 2
+            next
+          }
+          # Handle conditionals (pass through, or you can add your own logic)
+          print tag_accumulator
+          state = 0
+          next
+        } else {
+          # Still accumulating directive
+          next
         }
-        next
       }
 
       if (state == 2) {
-        if (current_line ~ /\{\{\s*endinclude/) {
-          if (filename) {
-            path3 = INC_DIR "/" filename
-            if (system("test -f \"" path3 "\"") == 0) {
-              tn = load_template(path3, tpl); render(tpl, tn, params, content)
-            } else if (AWK_VERBOSE) print "awk: Error: Template file not found: " path3 > "/dev/stderr"
-          } else if (AWK_VERBOSE) print "awk: Error: No filename parsed for include-block (state 2)." > "/dev/stderr"
-          content = ""; filename = ""; delete params; state = 0
+        # Accumulate block content until {{endinclude}}
+        if (line ~ /\{\{[[:space:]]*endinclude[[:space:]]*\}\}/) {
+          # Render the block
+          path3 = INC_DIR "/" filename
+          if (system("test -f \"" path3 "\"") == 0) {
+            tn = load_template(path3, tpl); render(tpl, tn, params, block_content)
+          } else if (AWK_VERBOSE) print "awk: Error: Template file not found: " path3 > "/dev/stderr"
+          state = 0
+          tag_accumulator = ""
+          block_content = ""
+          next
         } else {
-          content = content current_line "\n"
+          block_content = block_content (block_content ? "\n" : "") line
+          next
         }
-        next
       }
+
+      # If not in a directive, print line as-is
+      if (state == 0) print line
     }
   ' "$in_file" > "$out_file"
 }
@@ -406,97 +434,125 @@ process_conditionals() {
   awk -v current_page="$current_page_arg" \
       -v current_ext="$current_ext_arg" \
       -v AWK_VERBOSE="$VERBOSE" '
-    function trim(s) { sub(/^[ \t\r\n]+/, "", s); sub(/[ \t\r\n]+$/, "", s); return s }
+    function trim(s) { gsub(/^[[:space:]]+|[[:space:]]+$/, "", s); return s }
+    function normalize_tag(tag) {
+      gsub(/\n/, " ", tag)
+      gsub(/[[:space:]]+/, " ", tag)
+      return trim(tag)
+    }
     BEGIN {
       depth = 0
       print_ok[0]   = 1
       branch_taken[0] = 0
+      state = 0
+      tag_accumulator = ""
     }
-
-    /\{\{IF_EXT:[[:space:]]*/ {
-      original_line = $0
-      line = $0; sub(/.*\{\{IF_EXT:[[:space:]]*/, "", line); sub(/[[:space:]]*\}\}.*/, "", line); target = trim(line)
-      depth++
-      is_condition_met = (target == current_ext)
-      print_ok[depth] = print_ok[depth-1] && is_condition_met
-      branch_taken[depth] = 0
-      if (print_ok[depth]) {
-          branch_taken[depth] = 1
-      }
-      next
-    }
-    /\{\{ELIF_EXT:[[:space:]]*/ {
-      original_line = $0
-      line = $0; sub(/.*\{\{ELIF_EXT:[[:space:]]*/, "", line); sub(/[[:space:]]*\}\}.*/, "", line); target = trim(line)
-      is_condition_met = (target == current_ext)
-      can_take_branch = print_ok[depth-1] && !branch_taken[depth]
-      print_ok[depth] = can_take_branch && is_condition_met
-      if (print_ok[depth]) {
-          branch_taken[depth] = 1
-      }
-      next
-    }
-    /\{\{ELSE_EXT\}\}/ {
-      original_line = $0
-      can_take_branch = print_ok[depth-1] && !branch_taken[depth]
-      print_ok[depth] = can_take_branch
-      if (print_ok[depth]) {
-          branch_taken[depth] = 1
-      }
-      next
-    }
-    /\{\{ENDIF_EXT\}\}/ {
-      original_line = $0
-      depth--
-      next
-    }
-
-    /\{\{IF_PAGE:[[:space:]]*/ {
-      original_line = $0
-      line = $0; sub(/.*\{\{IF_PAGE:[[:space:]]*/, "", line); sub(/[[:space:]]*\}\}.*/, "", line); target = trim(line)
-      depth++
-      is_condition_met = (target == current_page)
-      print_ok[depth] = print_ok[depth-1] && is_condition_met
-      branch_taken[depth] = 0
-      if (print_ok[depth]) {
-          branch_taken[depth] = 1
-      }
-      next
-    }
-    /\{\{ELIF_PAGE:[[:space:]]*/ {
-      original_line = $0
-      line = $0; sub(/.*\{\{ELIF_PAGE:[[:space:]]*/, "", line); sub(/[[:space:]]*\}\}.*/, "", line); target = trim(line)
-      is_condition_met = (target == current_page)
-      can_take_branch = print_ok[depth-1] && !branch_taken[depth]
-      print_ok[depth] = can_take_branch && is_condition_met
-      if (print_ok[depth]) {
-          branch_taken[depth] = 1
-      }
-      next
-    }
-    /\{\{ELSE_PAGE\}\}/ {
-      original_line = $0
-      can_take_branch = print_ok[depth-1] && !branch_taken[depth]
-      print_ok[depth] = can_take_branch
-      if (print_ok[depth]) {
-          branch_taken[depth] = 1
-      }
-      next
-    }
-    /\{\{ENDIF_PAGE\}\}/ {
-      original_line = $0
-      depth--
-      next
-    }
-
     {
-      if (print_ok[depth]) {
-        print
+      line = $0
+
+      # Start of a directive
+      if (state == 0 && match(line, /\{\{[[:space:]]*(IF_|ELIF_|ELSE_|ENDIF_)/)) {
+        tag_accumulator = ""
+        state = 1
       }
+
+      if (state == 1) {
+        tag_accumulator = tag_accumulator (tag_accumulator ? "\n" : "") line
+        if (tag_accumulator ~ /\}\}/) {
+          # Tag is complete
+          tag_norm = normalize_tag(tag_accumulator)
+          # IF_EXT
+          if (tag_norm ~ /^\{\{[[:space:]]*IF_EXT:/) {
+            sub(/^\{\{[[:space:]]*IF_EXT:/, "", tag_norm)
+            sub(/\}\}.*$/, "", tag_norm)
+            target = trim(tag_norm)
+            depth++
+            is_condition_met = (target == current_ext)
+            print_ok[depth] = print_ok[depth-1] && is_condition_met
+            branch_taken[depth] = 0
+            if (print_ok[depth]) branch_taken[depth] = 1
+            state = 0
+            next
+          }
+          # ELIF_EXT
+          if (tag_norm ~ /^\{\{[[:space:]]*ELIF_EXT:/) {
+            sub(/^\{\{[[:space:]]*ELIF_EXT:/, "", tag_norm)
+            sub(/\}\}.*$/, "", tag_norm)
+            target = trim(tag_norm)
+            can_take_branch = print_ok[depth-1] && !branch_taken[depth]
+            is_condition_met = (target == current_ext)
+            print_ok[depth] = can_take_branch && is_condition_met
+            if (print_ok[depth]) branch_taken[depth] = 1
+            state = 0
+            next
+          }
+          # ELSE_EXT
+          if (tag_norm ~ /^\{\{[[:space:]]*ELSE_EXT[[:space:]]*\}\}/) {
+            can_take_branch = print_ok[depth-1] && !branch_taken[depth]
+            print_ok[depth] = can_take_branch
+            if (print_ok[depth]) branch_taken[depth] = 1
+            state = 0
+            next
+          }
+          # ENDIF_EXT
+          if (tag_norm ~ /^\{\{[[:space:]]*ENDIF_EXT[[:space:]]*\}\}/) {
+            depth--
+            state = 0
+            next
+          }
+          # IF_PAGE
+          if (tag_norm ~ /^\{\{[[:space:]]*IF_PAGE:/) {
+            sub(/^\{\{[[:space:]]*IF_PAGE:/, "", tag_norm)
+            sub(/\}\}.*$/, "", tag_norm)
+            target = trim(tag_norm)
+            depth++
+            is_condition_met = (target == current_page)
+            print_ok[depth] = print_ok[depth-1] && is_condition_met
+            branch_taken[depth] = 0
+            if (print_ok[depth]) branch_taken[depth] = 1
+            state = 0
+            next
+          }
+          # ELIF_PAGE
+          if (tag_norm ~ /^\{\{[[:space:]]*ELIF_PAGE:/) {
+            sub(/^\{\{[[:space:]]*ELIF_PAGE:/, "", tag_norm)
+            sub(/\}\}.*$/, "", tag_norm)
+            target = trim(tag_norm)
+            can_take_branch = print_ok[depth-1] && !branch_taken[depth]
+            is_condition_met = (target == current_page)
+            print_ok[depth] = can_take_branch && is_condition_met
+            if (print_ok[depth]) branch_taken[depth] = 1
+            state = 0
+            next
+          }
+          # ELSE_PAGE
+          if (tag_norm ~ /^\{\{[[:space:]]*ELSE_PAGE[[:space:]]*\}\}/) {
+            can_take_branch = print_ok[depth-1] && !branch_taken[depth]
+            print_ok[depth] = can_take_branch
+            if (print_ok[depth]) branch_taken[depth] = 1
+            state = 0
+            next
+          }
+          # ENDIF_PAGE
+          if (tag_norm ~ /^\{\{[[:space:]]*ENDIF_PAGE[[:space:]]*\}\}/) {
+            depth--
+            state = 0
+            next
+          }
+          # Not a recognized conditional, print as-is
+          print tag_accumulator
+          state = 0
+          next
+        } else {
+          # Still accumulating tag
+          next
+        }
+      }
+
+      # Print line if not inside a directive and condition is met
+      if (state == 0 && print_ok[depth]) print line
     }
   ' "$input_file" > "$output_file"
-
-  log_verbose "Applied conditionals for page=\"$current_page_arg\" ext=\"$current_ext_arg\""
 }
 
 # Parse markdown file. No, XSS isn't a problem here, since this is a SSG :)
@@ -589,13 +645,18 @@ parse_markdown() {
       in_template_block = 0
     }
 
-    # Template block start (anywhere in line)
+    # If both start and end are on the same line, print as-is
+    index($0, "{{include-block:") && index($0, "{{endinclude}}") {
+      print $0
+      next
+    }
+    # Template block start (anywhere in line, but not also end)
     index($0, "{{include-block:") {
       in_template_block = 1
       print $0
       next
     }
-    # Template block end (anywhere in line)
+    # Template block end (anywhere in line, but not also start)
     index($0, "{{endinclude}}") {
       print $0
       in_template_block = 0
@@ -603,7 +664,6 @@ parse_markdown() {
     }
     # Inside template block: print as-is
     in_template_block { print $0; next }
-
     # Single-line template
     $0 ~ /^\{\{.*\}\}$/ { print $0; next }
 
@@ -684,7 +744,7 @@ parse_markdown() {
     # Empty lines
     $0 ~ /^[ \t]*$/ { print ""; next }
 
-    # Regular paragraphs
+   # Regular paragraphs
     { print "<p>" process_inline($0) "</p>" }
 
     END {
@@ -697,149 +757,512 @@ parse_markdown() {
   '
 }
 
-# Main processing loop for source files
-while IFS= read -r file; do
-  JOB_COUNT=$((JOB_COUNT + 1))
-  wait_for_slot
-  (
-  ext="${file##*.}"
-  rel_path="${file#src/}"
-  out_file="dist/${rel_path%.*}.html"
-  mkdir -p "$(dirname "$out_file")"
-  log_verbose "Processing $file → $out_file (intended final name)"
+# POSIX-compliant path normalization (string manipulation)
+# Input: a path string (e.g., "src/posts/../images/pic.png")
+# Output: normalized path string (e.g., "src/images/pic.png")
+_normalize_path_string() {
+    local path="$1"
+    local old_ifs="$IFS"
+    local is_absolute=0
+    local prefix=""
 
-  base_name=$(basename "$file" ."$ext")
-  dynamic_title=$(printf '%s\n' "$base_name" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2)); print}')
+    case "$path" in
+        /*) is_absolute=1; path="${path#?}"; prefix="/";;
+    esac
 
-  temp_raw_content="$out_file.tmp-raw"
-  case "$ext" in
-    md)
-      if ! parse_markdown <"$file" >"$temp_raw_content" 2>"$out_file.md-err"; then
-        log_warning "Custom Markdown conversion failed for $file. Error: $(cat "$out_file.md-err") Skipping."
-        rm -f "$temp_raw_content" "$out_file.md-err"
+    IFS='/'
+    # shellcheck disable=SC2086 # We want word splitting here
+    set -- $path
+    IFS="$old_ifs"
+
+    local components_out=""
+    local component
+
+    for component_token in "$@"; do # Use different var name to avoid conflict
+        component="$component_token" # Assign to avoid issues if $@ is empty
+        if [ "$component" = "." ] || [ -z "$component" ]; then
+            continue
+        fi
+        if [ "$component" = ".." ]; then
+            if [ -n "$components_out" ]; then
+                components_out="${components_out%/*}"
+            elif [ "$is_absolute" -eq 0 ]; then
+                if [ -z "$components_out" ]; then
+                    components_out=".."
+                else
+                    components_out="$components_out/.."
+                fi
+            fi
+        else
+            if [ -z "$components_out" ]; then
+                components_out="$component"
+            else
+                components_out="$components_out/$component"
+            fi
+        fi
+    done
+
+    if [ "$is_absolute" -eq 1 ]; then
+        if [ -z "$components_out" ] && [ -z "$prefix" ]; then # Path was only "/" or "/." or "/.."
+             printf '/\n'
+        elif [ -z "$components_out" ] && [ -n "$prefix" ]; then # Path was like "/"
+             printf '/\n'
+        else
+             printf '/%s\n' "$components_out"
+        fi
+    else
+        if [ -z "$components_out" ]; then
+            printf '.\n'
+        else
+            printf '%s\n' "$components_out"
+        fi
+    fi
+}
+
+
+# collect all date-prefixed posts (ISO, EU, US) and emit sorted lines
+collect_posts() {
+  find src \
+    -type f \
+    ! -path 'src/includes/*' \
+    ! -path 'src/static/*' \
+    \( -name '*.md' -o -name '*.html' \) | \
+  while IFS= read -r file; do
+    filename=${file##*/}
+    case "$filename" in
+      ????-??-??-*)
+        # ISO: YYYY-MM-DD-slug.ext
+        date_part=${filename%%-*}
+        rest=${filename#${date_part}-}
+        slug=${rest%.*}
+        sort_key=${date_part//-/}
+        ;;
+      ??_??_????-*)
+        # EU: DD_MM_YYYY-slug.ext
+        date_part=${filename%%-*}
+        rest=${filename#${date_part}-}
+        slug=${rest%.*}
+        IFS=_ read -r d m y <<EOF
+${date_part}
+EOF
+        sort_key=${y}${m}${d}
+        ;;
+      ??-??-????-*)
+        # US: MM-DD-YYYY-slug.ext
+        date_part=${filename%%-*}
+        rest=${filename#${date_part}-}
+        slug=${rest%.*}
+        IFS=- read -r m d y <<EOF
+${date_part}
+EOF
+        sort_key=${y}${m}${d}
+        ;;
+      *)
         continue
-      fi
-      rm -f "$out_file.md-err"
-      ;;
-    html) cp "$file" "$temp_raw_content" ;;
-  esac
+        ;;
+    esac
 
-  if [ ! -f "$temp_raw_content" ]; then
-    log_warning "Temporary raw file $temp_raw_content not found for $file. Skipping."
-    continue
+    out_url=${file#src/}
+    out_url=dist/${out_url%.*}.html
+    image=""
+
+    img_content_src=$(sed -n '
+        s/.*<[iI][mM][gG][^>]*[sS][rR][cC][[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p;
+        s/.*<[iI][mM][gG][^>]*[sS][rR][cC][[:space:]]*=[[:space:]]*'\''\([^'\'']*\)''.*/\1/p;
+    ' "$file" | head -n 1)
+
+
+    if [ -n "$img_content_src" ]; then
+        case "$img_content_src" in
+            http://*|https://*|//*)
+                image="$img_content_src"
+                ;;
+            /*)
+                image="${img_content_src#/}"
+                ;;
+            *)
+                post_dir=$(dirname -- "$file")
+                if [ "$post_dir" = "." ]; then
+                    combined_path="$img_content_src"
+                else
+                    combined_path="$post_dir/$img_content_src"
+                fi
+
+                normalized_img_path=$(_normalize_path_string "$combined_path")
+
+                if case "$normalized_img_path" in src/*) true;; *) false;; esac; then
+                    image="${normalized_img_path#src/}"
+                else
+                    image="$normalized_img_path"
+                fi
+                if [ "$image" = "." ]; then image=""; fi
+                ;;
+        esac
+    fi
+
+    if [ -z "$image" ]; then
+        for ext in jpg jpeg png gif webp; do
+            fallback_img_path="static/posts/${slug}.${ext}"
+            if [ -f "src/$fallback_img_path" ]; then
+                image="$fallback_img_path"
+                break
+            fi
+        done
+    fi
+
+    printf '%s|%s|%s|%s|%s\n' \
+      "$sort_key" "$date_part" "$slug" "$out_url" "$image"
+  done | sort -r
+}
+
+# render a <ul> of either the N most recent or one page of all posts
+render_posts() {
+  mode=$1
+  count=$2
+  page=${3:-1}
+  pagination=${4:-false}
+  ul_class=${5:-posts}
+  li_class=${6:-post}
+  time_class=${7:-date}
+  link_class=${8:-title}
+  img_class=${9:-thumb}
+  show_images=${10:-false}
+
+  idx=$(mktemp)
+  # shellcheck disable=SC2267 # POSIX compliance for mktemp
+  if [ -z "$idx" ] || ! expr "$idx" : '.*/.*' >/dev/null ; then # Basic check for mktemp success
+    printf "Error: mktemp failed to create a temporary file.\n" >&2
+    return 1
   fi
 
-  current_content_for_directives="$out_file.tmp-directives-processed"
+  collect_posts >"$idx"
+  total=$(wc -l <"$idx")
+  total=${total%% *} # Trim leading spaces from wc output
+
+  printf '<ul class="%s">\n' "$ul_class"
+
+  if [ "$mode" = recent ]; then
+    slice_cmd="head -n $count"
+  else
+    start=$(( (page - 1) * count + 1 ))
+    end=$(( page * count ))
+    slice_cmd="sed -n '${start},${end}p'"
+  fi
+
+  eval "$slice_cmd \"$idx\"" | \
+  while IFS='|' read -r key date_part slug url image_path; do # Renamed 'image' to 'image_path'
+    title=${slug//-/ }
+    printf '  <li class="%s">\n' "$li_class"
+    if [ "$show_images" = true ] && [ -n "$image_path" ]; then
+      img_src_to_render="$image_path"
+      case "$image_path" in
+          http://*|https://*|//*) ;; # Use as is
+          /*) # Already absolute, use as is (though collect_posts tries to avoid leading / for local)
+              img_src_to_render="$image_path" ;;
+          *)  # Prepend / if not a full URL and not starting with /
+              img_src_to_render="/${image_path#/}" ;;
+      esac
+      printf '    <img class="%s" src="%s" alt="%s">\n' \
+        "$img_class" "$img_src_to_render" "$title"
+    fi
+    printf '    <time class="%s" datetime="%s">%s</time>\n' \
+      "$time_class" "$key" "$date_part"
+    printf '    <a class="%s" href="/%s">%s</a>\n' \
+      "$link_class" "${url#dist/}" "$title"
+    printf '  </li>\n'
+  done
+
+  printf '</ul>\n'
+
+  if [ "$mode" = all ] && [ "$pagination" = true ]; then
+    if [ "$count" -gt 0 ]; then
+        pages=$(( (total + count - 1) / count ))
+        if [ "$pages" -gt 1 ]; then # Only show pagination if more than one page
+            printf '<nav class="pagination">\n'
+            # Using awk for POSIX-compliant sequence generation instead of 'seq'
+            awk_prog='BEGIN { for (p = start_page; p <= total_pages; p++) printf "%d\\n", p }'
+            current_page_for_awk=$page # Avoid conflict with awk var 'page'
+            # shellcheck disable=SC2016 # We want $p, $current_page_for_awk to be expanded by shell
+            echo "$pages" | awk -v start_page=1 -v total_pages="$pages" -v current_page="$current_page_for_awk" '
+                BEGIN {
+                    printf "  ";
+                    for (p = 1; p <= total_pages; p++) {
+                        if (p > 1) {
+                            printf " ";
+                        }
+                        if (p == current_page) {
+                            printf "<span class=\"current\">%d</span>", p;
+                        } else {
+                            printf "<a class=\"page\" href=\"?page=%d\">%d</a>", p, p;
+                        }
+                    }
+                }
+            '
+            printf '</nav>\n'
+        fi
+    fi
+  fi
+  rm -f "$idx"
+}
+
+# replace {{recent-posts…}} and {{all-posts…}} in a file
+process_post_directives() {
+  in=$1; out=$2
+  tmp1=$(mktemp)
+  tmp2=$(mktemp)
+  # shellcheck disable=SC2267 # POSIX compliance for mktemp
+  if [ -z "$tmp1" ] || ! expr "$tmp1" : '.*/.*' >/dev/null || \
+     [ -z "$tmp2" ] || ! expr "$tmp2" : '.*/.*' >/dev/null ; then
+    printf "Error: mktemp failed to create temporary files.\n" >&2
+    [ -n "$tmp1" ] && rm -f "$tmp1"
+    [ -n "$tmp2" ] && rm -f "$tmp2"
+    return 1
+  fi
+
+
   awk '
-    BEGIN {
-      in_comment = 0
-      disabled_open_brace = "{^{"
-      disabled_close_brace = "}^}"
+    /\{\{(recent|all)-posts/ {
+      buf = $0
+      while (buf !~ /\}\}/ && getline > 0) {
+        buf = buf " " $0
+      }
+      print buf
+      next
     }
-    {
-      current_line_text = $0
-      output_buffer = ""
-      while (length(current_line_text) > 0) {
-        if (in_comment) {
-          comment_end_pos = index(current_line_text, "-->")
-          if (comment_end_pos > 0) {
-            text_inside_comment = substr(current_line_text, 1, comment_end_pos - 1)
-            gsub(/\{\{/, disabled_open_brace, text_inside_comment)
-            gsub(/\}\}/, disabled_close_brace, text_inside_comment)
-            output_buffer = output_buffer text_inside_comment "-->"
-            current_line_text = substr(current_line_text, comment_end_pos + 3)
-            in_comment = 0
+    { print }
+  ' "$in" >"$tmp1"
+
+  sed 's|<p>[[:space:]]*\({{\(recent\|all\)-posts[^}]*}}\)[[:space:]]*</p>|\1|g' \
+      "$tmp1" >"$tmp2"
+
+  : >"$out"
+  while IFS= read -r line; do
+    case "$line" in
+      *'{{recent-posts '*)
+        count=$(printf '%s\n' "$line" | sed -n 's/.*count=["]*\([0-9]\{1,\}\)["]*.*/\1/p')
+        ul_class=$(printf '%s\n' "$line" | sed -n 's/.*ul_class=["]*\([^"]*\)["]*.*/\1/p')
+        li_class=$(printf '%s\n' "$line" | sed -n 's/.*li_class=["]*\([^"]*\)["]*.*/\1/p')
+        time_class=$(printf '%s\n' "$line" | sed -n 's/.*time_class=["]*\([^"]*\)["]*.*/\1/p')
+        link_class=$(printf '%s\n' "$line" | sed -n 's/.*link_class=["]*\([^"]*\)["]*.*/\1/p')
+        img_class=$(printf '%s\n' "$line" | sed -n 's/.*img_class=["]*\([^"]*\)["]*.*/\1/p')
+        show_images=$(printf '%s\n' "$line" | sed -n 's/.*show_images=["]*\(\(true\)\|\(false\)\)["]*.*/\1/p')
+
+        render_posts recent "${count:-10}" 1 false \
+          "${ul_class:-posts}" "${li_class:-post}" \
+          "${time_class:-date}" "${link_class:-title}" \
+          "${img_class:-thumb}" "${show_images:-false}" \
+          >>"$out"
+        ;;
+
+      *'{{all-posts '*)
+        page_size=$(printf '%s\n' "$line" | sed -n 's/.*page_size=["]*\([0-9]\{1,\}\)["]*.*/\1/p')
+        page=$(printf '%s\n' "$line" | sed -n 's/.*page=["]*\([0-9]\{1,\}\)["]*.*/\1/p')
+        pagination=$(printf '%s\n' "$line" | sed -n 's/.*pagination=["]*\(\(true\)\|\(false\)\)["]*.*/\1/p')
+        ul_class=$(printf '%s\n' "$line" | sed -n 's/.*ul_class=["]*\([^"]*\)["]*.*/\1/p')
+        li_class=$(printf '%s\n' "$line" | sed -n 's/.*li_class=["]*\([^"]*\)["]*.*/\1/p')
+        time_class=$(printf '%s\n' "$line" | sed -n 's/.*time_class=["]*\([^"]*\)["]*.*/\1/p')
+        link_class=$(printf '%s\n' "$line" | sed -n 's/.*link_class=["]*\([^"]*\)["]*.*/\1/p')
+        img_class=$(printf '%s\n' "$line" | sed -n 's/.*img_class=["]*\([^"]*\)["]*.*/\1/p')
+        show_images=$(printf '%s\n' "$line" | sed -n 's/.*show_images=["]*\(\(true\)\|\(false\)\)["]*.*/\1/p')
+
+        render_posts all "${page_size:-10}" "${page:-1}" "${pagination:-false}" \
+          "${ul_class:-posts}" "${li_class:-post}" \
+          "${time_class:-date}" "${link_class:-title}" \
+          "${img_class:-thumb}" "${show_images:-false}" \
+          >>"$out"
+        ;;
+      *)
+        printf '%s\n' "$line" >>"$out"
+        ;;
+    esac
+  done <"$tmp2"
+
+  rm -f "$tmp1" "$tmp2"
+}
+
+# Main processing loop for source files
+build() {
+  while IFS= read -r file; do
+    JOB_COUNT=$((JOB_COUNT + 1))
+    wait_for_slot
+    (
+    ext="${file##*.}"
+    rel_path="${file#src/}"
+    out_file="dist/${rel_path%.*}.html"
+    mkdir -p "$(dirname "$out_file")"
+    log_verbose "Processing $file → $out_file"
+
+    base_name=$(basename "$file" ."$ext")
+    dynamic_title=$(printf '%s\n' "$base_name" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2)); print}')
+
+    temp_raw_content="$out_file.tmp-raw"
+    case "$ext" in
+      md)
+        if ! parse_markdown <"$file" >"$temp_raw_content" 2>"$out_file.md-err"; then
+          log_warning "Custom Markdown conversion failed for $file. Error: $(cat "$out_file.md-err") Skipping."
+          rm -f "$temp_raw_content" "$out_file.md-err"
+          continue
+        fi
+        rm -f "$out_file.md-err"
+        ;;
+      html) cp "$file" "$temp_raw_content" ;;
+    esac
+
+    if [ ! -f "$temp_raw_content" ]; then
+      log_warning "Temporary raw file $temp_raw_content not found for $file. Skipping."
+      continue
+    fi
+
+    current_content_for_directives="$out_file.tmp-directives-processed"
+    awk '
+      BEGIN {
+        in_comment = 0
+        disabled_open_brace = "{^{"
+        disabled_close_brace = "}^}"
+      }
+      {
+        current_line_text = $0
+        output_buffer = ""
+        while (length(current_line_text) > 0) {
+          if (in_comment) {
+            comment_end_pos = index(current_line_text, "-->")
+            if (comment_end_pos > 0) {
+              text_inside_comment = substr(current_line_text, 1, comment_end_pos - 1)
+              gsub(/\{\{/, disabled_open_brace, text_inside_comment)
+              gsub(/\}\}/, disabled_close_brace, text_inside_comment)
+              output_buffer = output_buffer text_inside_comment "-->"
+              current_line_text = substr(current_line_text, comment_end_pos + 3)
+              in_comment = 0
+            } else {
+              text_inside_comment = current_line_text
+              gsub(/\{\{/, disabled_open_brace, text_inside_comment)
+              gsub(/\}\}/, disabled_close_brace, text_inside_comment)
+              output_buffer = output_buffer text_inside_comment
+              current_line_text = ""
+            }
           } else {
-            text_inside_comment = current_line_text
-            gsub(/\{\{/, disabled_open_brace, text_inside_comment)
-            gsub(/\}\}/, disabled_close_brace, text_inside_comment)
-            output_buffer = output_buffer text_inside_comment
-            current_line_text = ""
+            comment_start_pos = index(current_line_text, "<!--")
+            if (comment_start_pos > 0) {
+              text_before_comment = substr(current_line_text, 1, comment_start_pos - 1)
+              output_buffer = output_buffer text_before_comment "<!--"
+              current_line_text = substr(current_line_text, comment_start_pos + 4)
+              in_comment = 1
+            } else {
+              output_buffer = output_buffer current_line_text
+              current_line_text = ""
+            }
           }
-        } else {
-          comment_start_pos = index(current_line_text, "<!--")
-          if (comment_start_pos > 0) {
-            text_before_comment = substr(current_line_text, 1, comment_start_pos - 1)
-            output_buffer = output_buffer text_before_comment "<!--"
-            current_line_text = substr(current_line_text, comment_start_pos + 4)
-            in_comment = 1
-          } else {
-            output_buffer = output_buffer current_line_text
-            current_line_text = ""
+        }
+        print output_buffer
+      }
+    ' "$temp_raw_content" > "$current_content_for_directives"
+    rm -f "$temp_raw_content"
+
+    title_override=$(awk '
+      {
+        prefix_regex = "\\{\\{[[:space:]]*[Tt][Ii][Tt][Ll][Ee]:[[:space:]]*"
+
+        if (match($0, prefix_regex)) {
+          content_and_suffix = substr($0, RSTART + RLENGTH)
+
+          if (match(content_and_suffix, "\\}\\}")) {
+            title_val = substr(content_and_suffix, 1, RSTART - 1)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", title_val)
+            print title_val
+            exit
           }
         }
       }
-      print output_buffer
-    }
-  ' "$temp_raw_content" > "$current_content_for_directives"
-  rm -f "$temp_raw_content"
+    ' "$current_content_for_directives")
 
-  title_override=$(awk '
-    {
-      prefix_regex = "\\{\\{[[:space:]]*[Tt][Ii][Tt][Ll][Ee]:[[:space:]]*"
+    temp_after_title_removal="$out_file.tmp-title-removed"
+    sed 's/{{[[:space:]]*[Tt][Ii][Tt][Ll][Ee]:[^}]*}}//g' "$current_content_for_directives" > "$temp_after_title_removal"
+    mv "$temp_after_title_removal" "$current_content_for_directives"
 
-      if (match($0, prefix_regex)) {
-        content_and_suffix = substr($0, RSTART + RLENGTH)
+    page_id="${rel_path%.*}.html"
+    current_title="${title_override:-$dynamic_title}"
+    log_verbose "Title for $page_id -> \"$current_title\""
 
-        if (match(content_and_suffix, "\\}\\}")) {
-          title_val = substr(content_and_suffix, 1, RSTART - 1)
-          gsub(/^[[:space:]]+|[[:space:]]+$/, "", title_val)
-          print title_val
-          exit
-        }
-      }
-    }
-  ' "$current_content_for_directives")
+    temp_after_template="$out_file.tmp-template"
+    apply_template "$current_content_for_directives" "$temp_after_template" "$current_title"
+    rm -f "$current_content_for_directives"
 
-  temp_after_title_removal="$out_file.tmp-title-removed"
-  sed 's/{{[[:space:]]*[Tt][Ii][Tt][Ll][Ee]:[^}]*}}//g' "$current_content_for_directives" > "$temp_after_title_removal"
-  mv "$temp_after_title_removal" "$current_content_for_directives"
+    temp_after_conditionals="$out_file.tmp-cond"
+    process_conditionals "$temp_after_template" "$temp_after_conditionals" "$page_id" "$ext"
+    rm -f "$temp_after_template"
 
-  page_id="${rel_path%.*}.html"
-  current_title="${title_override:-$dynamic_title}"
-  log_verbose "Title for $page_id -> \"$current_title\""
+    if [ ! -f "$temp_after_conditionals" ]; then
+      log_error "Conditional processing failed for $file. Output file $temp_after_conditionals not created."
+      rm -f "$current_content_for_directives" "$temp_after_template"
+      continue
+    fi
 
-  temp_after_template="$out_file.tmp-template"
-  apply_template "$current_content_for_directives" "$temp_after_template" "$current_title"
-  rm -f "$current_content_for_directives"
+    temp_after_includes="$out_file.tmp-includes"
+    process_includes "$temp_after_conditionals" "$temp_after_includes"
+    rm -f "$temp_after_conditionals"
 
-  temp_after_conditionals="$out_file.tmp-cond"
-  process_conditionals "$temp_after_template" "$temp_after_conditionals" "$page_id" "$ext"
-  rm -f "$temp_after_template"
+    temp_after_posts="$out_file.tmp-posts"
+    process_post_directives "$temp_after_includes" "$temp_after_posts"
+    rm -f "$temp_after_includes"
 
-  if [ ! -f "$temp_after_conditionals" ]; then
-    log_error "Conditional processing failed for $file. Output file $temp_after_conditionals not created."
-    rm -f "$current_content_for_directives" "$temp_after_template"
-    continue
+    temp_after_styles="$out_file.tmp-styles"
+    process_styles "$temp_after_posts" "$temp_after_styles"
+    rm -f "$temp_after_posts"
+
+    temp_no_comments="$out_file.tmp-no-comments"
+    sed '/<!--.*-->/d;/^[[:space:]]*$/d' "$temp_after_styles" > "$temp_no_comments"
+
+    intended_final_filename="dist/${rel_path%.*}.html"
+    process_scripts "$temp_no_comments" "$intended_final_filename"
+    rm -f "$temp_after_styles" "$temp_no_comments"
+
+    log "Created $intended_final_filename"
+  ) &
+  done < <(find src \( -path src/includes -o -name template.html \) -prune -o -type f \( -name '*.md' -o -name '*.html' \) -print)
+
+  wait # Wait for all background jobs to finish
+  JOB_COUNT=0
+
+  # Copy static assets
+  if [ -d "src/static" ]; then
+    mkdir -p dist/static
+    cp -R src/static/* dist/static/ 2>/dev/null # Suppress errors for symlinks etc.
+    log "Copied static files to dist/static/"
+  else
+    log_warning "No 'src/static/' directory found. Skipping static asset copy."
   fi
 
-  temp_after_includes="$out_file.tmp-includes"
-  process_includes "$temp_after_conditionals" "$temp_after_includes"
-  rm -f "$temp_after_conditionals"
+  log "${GREEN}Build complete!${NC} Check the 'dist' directory."
+}
 
-  temp_after_styles="$out_file.tmp-styles"
-  process_styles "$temp_after_includes" "$temp_after_styles"
-  rm -f "$temp_after_includes"
-
-  intended_final_filename="dist/${rel_path%.*}.html"
-  process_scripts "$temp_after_styles" "$intended_final_filename"
-  rm -f "$temp_after_styles"
-
-  log "Created $intended_final_filename"
-) &
-done < <(find src \( -path src/includes -o -name template.html \) -prune -o -type f \( -name '*.md' -o -name '*.html' \) -print)
-
-wait # Wait for all background jobs to finish
-JOB_COUNT=0 # Reset for any future use
-
-# Copy static assets
-if [ -d "src/static" ]; then
-  mkdir -p dist/static
-  cp -R src/static/* dist/static/ 2>/dev/null # Suppress errors for symlinks etc.
-  log "Copied static files to dist/static/"
+if [ "$WATCH" -eq 1 ]; then
+  if [ "$SERVE" -eq 1 ]; then
+    start_mongoose
+  fi
+  last_hash=""
+  browser_opened=0
+  while true; do
+    current_hash=$(find src -type f -exec md5sum {} + 2>/dev/null | md5sum | awk '{print $1}')
+    if [ "$current_hash" != "$last_hash" ]; then
+      clear
+      log_verbose "Change detected, rebuilding..."
+      build
+      last_hash="$current_hash"
+      if [ "$SERVE" -eq 1 ] && [ "$OPEN_BROWSER" -eq 1 ] && [ "$browser_opened" -eq 0 ]; then
+        open_browser
+        browser_opened=1
+      fi
+    fi
+    sleep 1
+  done
 else
-  log_warning "No 'src/static/' directory found. Skipping static asset copy."
+  build
+  if [ "$SERVE" -eq 1 ]; then
+    start_mongoose
+    if [ "$OPEN_BROWSER" -eq 1 ]; then
+      open_browser
+    fi
+  fi
 fi
 
-log "${GREEN}Build complete!${NC} Check the 'dist' directory."
 exit 0

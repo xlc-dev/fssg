@@ -1,8 +1,10 @@
 # fssg - Fast, Simple Static Site Generator
 
-fssg is a lightweight and fast static site generator written in POSIX-compliant shell script.
-It converts Markdown files to HTML, applies a template, processes includes and conditionals in HTML files, hoists `<style>` and `<script>` blocks,
-copies static assets, and produces a `dist` directory with the generated site. It's designed to be simple, fast, and easy to use for generating static websites.
+fssg is a minimal, fast static site generator built with POSIX shell scripting.
+fssg is ideal for quickly building and maintaining static websites with minimal dependencies.
+It transforms Markdown and HTML files into a complete website by applying templates,
+processing includes and conditionals, and managing styles and scripts.
+Static assets are copied automatically, producing a ready-to-deploy dist directory.
 
 ## Features
 
