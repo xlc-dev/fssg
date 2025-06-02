@@ -1,14 +1,11 @@
 dist/
-src/
+Thumbs.db
+Desktop.ini
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trash/
-Icon?
-Thumbs.db
-ehthumbs.db
-Desktop.ini
 *.tmp
 *.temp
 *.swp
