@@ -169,4 +169,4 @@ This is an fssg site.
 
 ## 📜 License
 
-MIT License. See [LICENSE](https://github.com/xlc-dev/fssg/blob/main/LICENSE).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
