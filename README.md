@@ -1,108 +1,150 @@
-# fssg - Fast, Simple Static Site Generator
+<p align="center">
+  <a href="https://github.com/xlc-dev/fssg">
+    <img src="./src/static/img/logo.png" alt="fssg Logo" width="150">
+  </a>
+</p>
 
-fssg is a minimal, fast static site generator built with POSIX shell scripting.
-fssg is ideal for quickly building and maintaining static websites with minimal dependencies.
-It transforms Markdown and HTML files into a complete website by applying templates,
-processing includes and conditionals, and managing styles and scripts.
-Static assets are copied automatically, producing a ready-to-deploy dist directory.
+<h1 align="center">fssg - Fast Static Site Generator</h1>
 
-## Features
+<p align="center">
+  <em>Blazing Fast. Pure Shell. Zero Fuss.</em>
+</p>
 
-- The script is fully POSIX-compliant, ensuring portability across Unix-like systems.
-- No external Markdown parser is required, reducing dependencies.
-- Converts `.md` files to HTML with a custom Markdown parser supporting headers, links, bold, italic, strikethrough, tables, and horizontal rules.
-- Applies an HTML template (`src/template.html`) to generated content, supporting `{{content}}` and `{{title}}` placeholders.
-- Processes include directives: `{{include: file.html}}` for direct inclusion and `{{include-block: file.html}}...{{endinclude}}` for parameterized templates.
-- Hoists `<style>` blocks to `<head>` and `<script>` blocks to the end of `<body>`, deduplicating them.
-- Supports conditional directives: `{{IF_PAGE: file.html}}`, `{{ELIF_PAGE: file.html}}`, `{{ELSE_PAGE}}`, `{{ENDIF_PAGE}}`, and `{{IF_EXT: ext}}`, `{{ELIF_EXT: ext}}`, `{{ELSE_EXT}}`, `{{ENDIF_EXT}}`.
-- Copies static files from `src/static/` to `dist/static/`.
-- Handles `{{title: Custom Title}}` directives in source files to override default titles from filenames.
+<p align="center">
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
+  </a>
+  <img src="https://img.shields.io/badge/POSIX-Compliant-brightgreen.svg" alt="POSIX Compliant">
+  <a href="https://github.com/xlc-dev/fssg/stargazers">
+    <img src="https://img.shields.io/github/stars/xlc-dev/fssg.svg?style=social&label=Star&logo=github" alt="GitHub stars">
+  </a>
+  <a href="https://github.com/xlc-dev/fssg/network/members">
+    <img src="https://img.shields.io/github/forks/xlc-dev/fssg.svg?style=social&label=Fork&logo=github" alt="GitHub forks">
+  </a>
+  <br>
+  <a href="https://github.com/xlc-dev/fssg/commits/main">
+    <img src="https://img.shields.io/github/last-commit/xlc-dev/fssg.svg?logo=github&style=flat-square" alt="GitHub last commit">
+  </a>
+  <img src="https://img.shields.io/github/repo-size/xlc-dev/fssg.svg?style=flat-square&logo=github" alt="GitHub repo size">
+</p>
 
-## Installation
+---
 
-1. **Clone the repository or download the script**:
+fssg is a minimal, lightning-fast static site generator built entirely with POSIX shell. It transforms Markdown and HTML files into a complete website, applying templates, handling includes, conditionals, and more, with zero complex dependencies.
 
-   - Save `fssg` in your project directory.
+➡️ **For full details, feature deep-dives, and advanced usage, please visit the [fssg Documentation Website](https://xlc-dev.github.io/fssg/).**
 
-2. **Dependencies**:
-   - Requires a POSIX-compliant shell (e.g., `sh`, `bash`).
-   - Commands like `awk`, `sed`, `find`, and `cp` (standard in POSIX systems).
+## ✨ Core Features
 
-## Usage
+- 🚀 **Lightning Fast:** Pure POSIX shell for maximum build speed.
+- 🪶 **Featherlight & Simple:** No heavy dependencies. Just your shell and content.
+- 📄 **Markdown & HTML:** Write content your way.
+- 🧩 **Templating Power:** Main page template, simple includes, and parameterized block includes.
+- 💡 **Conditional Rendering:** Show/hide content based on output page or source file extension.
+- 🔄 **Dynamic Content:** Automated post listings (recent & all) with pagination.
+- 💅 **Asset Pipeline:** Static file copying and automatic style/script hoisting & deduplication.
+- 🛠️ **Developer Friendly:** Watch mode, built-in dev server, parallel builds, and auto-open in browser.
+- 🛡️ **POSIX Compliant:** Ensures broad portability.
+- ✂️ **Built-in Markdown Parser:** Handles common Markdown syntax without external tools.
 
-To build your site, run:
+## ⚙️ Prerequisites
 
-```sh
+- A POSIX-compliant shell (e.g., `sh`, `bash`, `zsh`).
+- Standard POSIX utilities (e.g., `awk`, `sed`, `find`, `cp`). (Usually pre-installed).
+
+## 🚀 Getting Started
+
+### 1. Installation
+
+- **Download the script (recommended for most users):**
+
+  ```shell
+  wget https://github.com/xlc-dev/fssg/raw/main/fssg
+  ```
+
+  Place `fssg` in your project's root directory.
+
+- **Or, clone the repository (for example if you also want `mongoose/ for -s`):**
+  ```shell
+  git clone https://github.com/xlc-dev/fssg.git
+  # Then copy fssg/fssg and fssg/mongoose/ to your project
+  cp fssg/fssg ./my-site/
+  cp -r fssg/mongoose ./my-site/mongoose/ # If using -s (serve)
+  chmod +x ./my-site/fssg
+  ```
+
+### 2. Basic Project Structure
+
+```
+your-project/
+├── fssg                # The generator script
+└── src/
+    ├── index.md        # Your content (or .html)
+    ├── template.html   # Main HTML layout
+    └── static/         # (Optional) CSS, images, etc.
+        └── style.css
+```
+
+(See the [full documentation](https://github.com/xlc-dev/fssg/blob/main/README.md#directory-structure) for more details on structure, includes, etc.)
+
+### 3. Build Your Site
+
+```shell
 ./fssg
 ```
 
-For help:
+Output is generated in the `dist/` directory.
 
-```sh
-./fssg -h
+### 4. Development Workflow
+
+For local development with live reload and a server:
+
+```shell
+./fssg -j 100 -s -w -o
 ```
 
-For example, to shut the script up and run with 50 parallel jobs:
+(Requires `mongoose/` for the `-s` option. Adjust `-j` (jobs) as needed.)
 
-```sh
-./fssg -q -j 50
+## 📖 Core Concepts Overview
+
+fssg works by processing files from your `src/` directory into a static website in `dist/`.
+
+- **Main Template (`src/template.html`):** Defines the overall page structure. Uses `{{content}}` for page-specific content and `{{title}}` for the page title.
+- **Content Files (`.md`, `.html`):** Your actual page content. Markdown files are converted to HTML.
+- **Includes (`src/includes/`):** Reusable HTML snippets.
+- **Conditionals:** Control content visibility based on page or file type.
+- **Post Listings:** Automatically generate lists from dated content files.
+- **Static Assets (`src/static/`):** Copied directly to `dist/static/`.
+- **Style/Script Hoisting:** `<style>` tags are moved to `<head>`, `<script>` tags to the end of `<body>`.
+
+## ⚙️ Command-Line Options
+
+```
+./fssg [options]
 ```
 
-### Options
+- `-h, --help`: Show help.
+- `-q, --quiet`: Suppress output (except errors).
+- `-v, --verbose`: Show detailed build info.
+- `-n, --nocolor`: Disable colored output.
+- `-w, --watch`: Watch `src/` for changes and rebuild.
+- `-s, --serve`: Start a local dev server for `dist/`.
+- `-o, --open`: Auto-open browser with `-s`.
+- `-j <number>`: Set parallel build jobs (default: 4).
 
-- `-h, --help`: Display the help message.
-- `-q, --quiet`: Suppress all output except errors.
-- `-v, --verbose`: Show detailed build information.
-- `-j, --jobs`: Specify the number of parallel jobs (default: 4).
+## 📝 Simple Example
 
-### Environment Variables
-
-- `NO_COLOR`: Disable colored output (set to any value, e.g., `export NO_COLOR=1`).
-- `QUIET`: Suppress all output except errors (set to `1` to enable).
-- `VERBOSE`: Show detailed build information (set to `1` to enable).
-- `MAX_JOBS`: Set the number of parallel jobs (default: 4).
-
-## How It Works
-
-1. **Input Structure**:
-
-   - Place Markdown (`.md`) or HTML (`.html`) files in `src/` (e.g., `src/index.md`).
-   - Use `src/template.html` for the HTML template (not copied to output, but used as a base for each page).
-   - Place reusable HTML snippets in `src/includes/`.
-   - Store static assets (e.g., CSS, images, fonts) in `src/static/`.
-
-2. **Building the Site**:
-
-   - Markdown files are parsed into HTML using a custom AWK script.
-   - HTML files are processed directly without the markdown parser.
-   - The script applies the template, processes includes, conditionals, and hoists `<style>` and `<script>` blocks.
-   - Output is generated in the `dist/` directory, created fresh each build.
-   - Static assets are copied to `dist/static/`.
-
-3. **Processing Steps**:
-
-   - **Markdown Parsing**: Converts `.md` files to HTML, supporting headers (`#`), links (`[text](url)`), bold (`**text**`), italic (`*text*`), strikethrough (`~~text~~`), tables (`|...|`), and more.
-   - **Title Handling**: Uses `{{title: Custom Title}}` or generates a title from the filename.
-   - **Conditionals**: Supports `IF_PAGE`, `ELIF_PAGE`, `ELSE_PAGE`, `ENDIF_PAGE` for page-specific content, and `IF_EXT`, `ELIF_EXT`, `ELSE_EXT`, `ENDIF_EXT` for extension-specific content.
-   - **Includes**: Handles `{{include: file.html}}` and `{{include-block: file.html param="value"}}...{{endinclude}}`.
-   - **Style/Script Hoisting**: Moves `<style>` to `<head>` and `<script>` to the end of `<body>`, removing duplicates.
-   - **Static Assets**: Copies `src/static/` to `dist/static/`.
-
-## Example
-
-Here is a simple example to get started with fssg:
-
-**src/index.md**:
+**`src/index.md`**:
 
 ```markdown
 {{title: Home Page}}
 
-# Welcome
+# Welcome!
 
-This is my **very cool** site.
+This is an fssg site.
 ```
 
-**src/template.html**:
+**`src/template.html`**:
 
 ```html
 <!DOCTYPE html>
@@ -116,13 +158,9 @@ This is my **very cool** site.
 </html>
 ```
 
-**Run**:
+**Run**: `./fssg`
 
-```sh
-./fssg
-```
-
-**Output** (`dist/index.html`):
+**Output (`dist/index.html`)**:
 
 ```html
 <!DOCTYPE html>
@@ -131,8 +169,12 @@ This is my **very cool** site.
     <title>Home Page</title>
   </head>
   <body>
-    <h1>Welcome</h1>
-    <p>This is my <strong>very cool</strong> site.</p>
+    <h1>Welcome!</h1>
+    <p>This is an fssg site.</p>
   </body>
 </html>
 ```
+
+## 📜 License
+
+MIT License. See [LICENSE](https://github.com/xlc-dev/fssg/blob/main/LICENSE).
