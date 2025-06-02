@@ -12,11 +12,11 @@
 
 <p align="center">
   <a href="https://opensource.org/licenses/MIT">
-    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License: MIT">
   </a>
-  <img src="https://img.shields.io/badge/POSIX-Compliant-brightgreen.svg" alt="POSIX Compliant">
+  <img src="https://img.shields.io/badge/POSIX-Compliant-brightgreen.svg?style=flat-square" alt="POSIX Compliant">
   <a href="https://github.com/xlc-dev/fssg/stargazers">
-    <img src="https://img.shields.io/github/stars/xlc-dev/fssg.svg?style=social&label=Star&logo=github" alt="GitHub stars">
+    <img src="https://img.shields.io/github/stars/xlc-dev/fssg.svg?style=flat-square&logo=github" alt="GitHub stars">
   </a>
 </p>
 
