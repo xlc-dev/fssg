@@ -901,7 +901,7 @@ EOF
     fi
 
     if [ -z "$image" ]; then
-        for ext in jpg jpeg png gif webp; do
+        for ext in jpg jpeg png gif webp svg; do
             fallback_img_path="static/posts/${slug}.${ext}"
             if [ -f "src/$fallback_img_path" ]; then
                 image="$fallback_img_path"
