@@ -1,0 +1,745 @@
+<header class="hero">
+  <div class="container">
+    <img src="/static/img/logo.png" alt="fssg Logo" class="logo" />
+    <h1>fssg</h1>
+    <p class="tagline">Blazing Fast. Pure Shell. Zero Fuss.</p>
+    <p class="description">
+      A minimal, lightning-fast static site generator built entirely with POSIX
+      shell. Transform Markdown and HTML into a complete statically built
+      website with powerful features, no complex dependencies.
+    </p>
+    <div class="cta-buttons">
+      <a
+        href="https://github.com/xlc-dev/fssg"
+        target="_blank"
+        class="btn btn-primary"
+        >View on GitHub</a
+      >
+      <a href="#getting-started" class="btn btn-secondary">Get Started</a>
+    </div>
+  </div>
+</header>
+
+<section id="why-fssg" class="features-section">
+  <div class="container">
+    <h2>Why Choose fssg?</h2>
+    <div class="features-grid">
+      <div class="feature-item">
+        <div class="feature-icon">🚀</div>
+        <h3>Lightning Fast</h3>
+        <p>Built with pure POSIX shell for maximum build speed.</p>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🪶</div>
+        <h3>Featherlight & Simple</h3>
+        <p>No heavy dependencies. Just your shell and your content.</p>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">📄</div>
+        <h3>Markdown & HTML</h3>
+        <p>Write content your way. fssg handles the rest.</p>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🧩</div>
+        <h3>Templating Power</h3>
+        <p>Reusable templates, includes, and conditionals.</p>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🔄</div>
+        <h3>Dynamic Content</h3>
+        <p>Recent posts, pagination, and smart content handling.</p>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🛠️</div>
+        <h3>Developer Friendly</h3>
+        <p>Watch mode, built-in server, parallel builds.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how-it-works" class="how-it-works-section">
+  <div class="container">
+    <h2>How fssg Works</h2>
+    <p class="intro">
+      fssg takes your raw content and templates, and through a series of
+      shell-powered transformations, builds a complete static website.
+    </p>
+    <div class="steps-container">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h3>Write Your Content</h3>
+          <p>
+            Create pages in Markdown (<code>.md</code>) or HTML
+            (<code>.html</code>) in <code>src/</code>. Make sure
+            <code>src/template.html</code> exists and contains
+            <code>&#123;&#123;content&#125;&#125;</code>.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h3>fssg Processes your files</h3>
+          <p>
+            Markdown -> HTML, templating, includes, conditionals, post lists,
+            style/script hoisting.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h3>Static Assets Copied</h3>
+          <p>
+            Contents of <code>src/static/</code> are copied to
+            <code>dist/static/</code>.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <h3>Ready to Deploy!</h3>
+          <p>Optimized site generated in <code>dist/</code>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="getting-started" class="getting-started-section">
+  <div class="container">
+    <h2>Get Started with fssg</h2>
+    <ol class="steps-list">
+      <li>
+        <strong>Clone or Download:</strong> Get the script from GitHub and place
+        it wherever you want:
+        <pre><code class="language-shell">wget https://github.com/xlc-dev/fssg/raw/main/fssg</code></pre>
+        <p>Or, if you also want web server included (reccomended):</p>
+        <pre><code class="language-shell">git clone https://github.com/xlc-dev/fssg.git</code></pre>
+        <p>
+          Then, just copy <code>fssg</code> and the
+          <code>mongoose/</code> folder to your project directory.
+        </p>
+      </li>
+      <li>
+        <strong>Structure Your Site:</strong>
+        <ul>
+          <li>
+            Create <code>src/template.html</code> with
+            <code>&#123;&#123;title&#125;&#125;</code> and
+            <code>&#123;&#123;content&#125;&#125;</code>.
+          </li>
+          <li>
+            Add content like <code>src/index.md</code>,
+            <code>src/about.html</code>.
+          </li>
+          <li>Place static assets in <code>src/static/</code>.</li>
+          <li>Create reusable partials in <code>src/includes/</code>.</li>
+        </ul>
+      </li>
+      <li>
+        <strong>Build Your Site:</strong>
+        <pre><code class="language-shell">./fssg</code></pre>
+      </li>
+      <li>
+        <strong
+          >Or, the reccomended way to use fssg for local development:</strong
+        >
+        <pre><code class="language-shell">./fssg -j 100 -s -w -o</code></pre>
+        <p>
+          This builds with 100 parallel jobs (<code>-j 100</code>), starts a
+          <code>mongoose</code> web server (<code>-s</code>), looks for changes
+          in <code>src/</code>
+          and rebuilds automatically (<code>-w</code>) and opens the website in
+          your browser (<code>-o</code>). This is the recommended way to use
+          fssg for local development.
+        </p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section id="documentation" class="documentation-section">
+  <div class="container">
+    <h2>fssg Features Deep Dive</h2>
+
+    <article class="doc-article">
+      <h3>Command-Line Interface (CLI)</h3>
+      <p>
+        Control fssg's behavior with these flags when running
+        <code>./fssg [options]</code>:
+      </p>
+      <ul>
+        <li><code>-h, --help</code>: Display the help message and exit.</li>
+        <li><code>-q, --quiet</code>: Suppress all output except errors.</li>
+        <li><code>-v, --verbose</code>: Show detailed build information.</li>
+        <li>
+          <code>-n, --nocolor</code>: Disable colored output in the terminal.
+        </li>
+        <li>
+          <code>-w, --watch</code>: Watch <code>src/</code> for changes and
+          rebuild automatically.
+        </li>
+        <li>
+          <code>-s, --serve</code>: Start a local Mongoose web server (from
+          <code>./mongoose/</code>) for <code>dist/</code> at
+          <code>http://localhost:8000</code>.
+        </li>
+        <li>
+          <code>-o, --open</code>: Auto-open browser when <code>-s</code> is
+          used.
+        </li>
+        <li>
+          <code>-j, --jobs &lt;number&gt;</code>: Set parallel build jobs
+          (default: 4).
+        </li>
+      </ul>
+    </article>
+
+    <article class="doc-article">
+      <h3>Directory Structure</h3>
+      <p>fssg expects a specific project layout:</p>
+      <ul>
+        <li>
+          <code>src/</code>: Source directory for all content and templates.
+          <ul>
+            <li>
+              <code>*.md</code>, <code>*.html</code>: Your page content.
+              Subdirectories are preserved.
+            </li>
+            <li><code>template.html</code>: The main HTML layout for pages.</li>
+            <li>
+              <code>includes/</code>: (Optional) For reusable HTML snippets
+              (partials).
+            </li>
+            <li>
+              <code>static/</code>: (Optional) Assets (CSS, JS, images) copied
+              directly to <code>dist/static/</code>.
+            </li>
+          </ul>
+        </li>
+        <li>
+          <code>mongoose/</code>: (Optional) Mongoose server binaries if you
+          want to use <code>-s</code> for a local server.
+        </li>
+        <li><code>./fssg</code>: The generator script.</li>
+      </ul>
+    </article>
+
+    <article class="doc-article">
+      <h3>Core Templating System</h3>
+      <h4>1. Main Page Template</h4>
+      <p>
+        The <code>src/template.html</code> file defines the overall HTML
+        structure for your site's pages.
+      </p>
+      <h4>2. Content Injection</h4>
+      <p>
+        Place <code>&#123;&#123;content&#125;&#125;</code> in
+        <code>src/template.html</code>. The processed content of individual
+        Markdown or HTML files will be inserted here.
+      </p>
+      <h4>3. Dynamic Titles</h4>
+      <p>
+        Use <code>&#123;&#123;title&#125;&#125;</code> in
+        <code>src/template.html</code> (e.g., in <code>&lt;title&gt;</code> or
+        <code>&lt;h1&gt;</code>). The title is sourced by:
+      </p>
+      <ol>
+        <li>
+          An explicit
+          <code>&#123;&#123;title: Your Page Title&#125;&#125;</code>
+          directive at the top of a content file.
+        </li>
+        <li>
+          Otherwise, derived from the filename (e.g.,
+          <code>my-post.md</code> becomes "My Post").
+        </li>
+      </ol>
+    </article>
+
+    <article class="doc-article">
+      <h3>Content File Specifics</h3>
+      <h4>1. Markdown Processing (<code>.md</code> files only)</h4>
+      <p>
+        fssg uses a POSIX awk-based Markdown parser supporting common syntax:
+        headers, links, emphasis, strikethrough, GFM tables, HRs, and HTML
+        passthrough. Inline Markdown within HTML tags is also processed.
+      </p>
+      <p>
+        <em>Important:</em> fssg directives (like
+        <code>&#123;&#123;include:...&#125;&#125;</code>) are processed *after*
+        Markdown conversion. For clarity, place them on their own lines or
+        ensure they are distinct from Markdown syntax.
+      </p>
+
+      <h4>2. HTML Files</h4>
+      <p>
+        Used as-is, after fssg directive processing (includes, conditionals,
+        etc.).
+      </p>
+    </article>
+
+    <article class="doc-article">
+      <h3>Asset Pipeline</h3>
+      <h4>1. Static Assets (<code>src/static/</code>)</h4>
+      <p>
+        All contents are copied directly to <code>dist/static/</code>. Ideal for
+        global CSS, JS, images.
+      </p>
+      <h4>2. Style & Script Hoisting</h4>
+      <p>
+        All <code>&lt;style&gt;</code> and <code>&lt;script&gt;</code>
+        blocks from page content are automatically extracted, deduplicated, and
+        moved:
+      </p>
+      <ul>
+        <li>
+          <code>&lt;style&gt;</code> blocks to the <code>&lt;head&gt;</code>.
+        </li>
+        <li>
+          <code>&lt;script&gt;</code> blocks to the end of
+          <code>&lt;body&gt;</code>.
+        </li>
+      </ul>
+    </article>
+
+    <article class="doc-article">
+      <h3>Build Internals</h3>
+      <ul>
+        <li>
+          <strong>Parallel Builds:</strong> Use
+          <code>-j &lt;number&gt;</code> for faster processing of multiple
+          files.
+        </li>
+        <li>
+          <strong>HTML Comment Protection:</strong> fssg directives (e.g.,
+          <code>&#123;&#123;include&#125;&#125;</code>) inside HTML comments are
+          temporarily escaped during processing to prevent misinterpretation,
+          then restored.
+        </li>
+        <li>
+          <strong>Path Normalization:</strong> Internal logic correctly resolves
+          relative paths (e.g., <code>../image.png</code> in post content) to be
+          site-root relative in the final output.
+        </li>
+      </ul>
+    </article>
+
+    <article class="doc-article">
+      <h3>Includes for Reusable Content</h3>
+      <p>Place reusable HTML snippets in <code>src/includes/</code>.</p>
+
+      <h4>1. Simple Include</h4>
+      <p>
+        Syntax:
+        <code>&#123;&#123;include:filename.html&#125;&#125;</code>
+      </p>
+      <p>
+        Directly embeds the content of
+        <code>src/includes/test.html</code>.
+      </p>
+      <pre><code class="language-html">&#123;&#123;include: test.html&#125;&#125;</code></pre>
+
+      <h4>2. Block Includes with Parameters</h4>
+      <p>
+        Syntax:
+        <code
+          >&#123;&#123;include-block: template.html param1="value"&#125;&#125;
+          ... &#123;&#123;content&#125;&#125; ...
+          &#123;&#123;endinclude&#125;&#125;</code
+        >
+      </p>
+      <p>
+        Uses an include file as a template, passing parameters and block
+        content.
+      </p>
+      <ul>
+        <li>
+          <strong>Parameters:</strong> <code>key="value"</code> pairs (values
+          quoted). Access in include as
+          <code>&#123;&#123;key&#125;&#125;</code>.
+        </li>
+        <li>
+          <strong>Block Content:</strong> Content between
+          <code>&#123;&#123;include-block: ...&#125;&#125;</code> and
+          <code>&#123;&#123;endinclude&#125;&#125;</code> is injected into the
+          <code>&#123;&#123;content&#125;&#125;</code> placeholder within the
+          include template.
+        </li>
+      </ul>
+      <p><strong>Example:</strong></p>
+      <p><code>src/includes/alert.html</code>:</p>
+      <pre><code class="language-html">&lt;div class="alert alert-&#123;&#123;type&#125;&#125;"&gt;
+  &lt;strong&gt;&#123;&#123;alert_title&#125;&#125;:&lt;/strong&gt; &#123;&#123;content&#125;&#125;
+&lt;/div&gt;</code></pre>
+      <p>In your page content:</p>
+      <pre><code class="language-html">&#123;&#123;include-block: alert.html type="warning" alert_title="Attention"&#125;&#125;
+  This is an important message for the user.
+&#123;&#123;endinclude&#125;&#125;</code></pre>
+    </article>
+
+    <article class="doc-article">
+      <h3>Conditional Rendering</h3>
+      <p>Show or hide content based on context. Supports nesting.</p>
+
+      <h4>1. Conditional: By Output Page</h4>
+      <p>
+        Syntax:
+        <code
+          >&#123;&#123;IF_PAGE:about.html&#125;&#125;...&#123;&#123;ELIF_PAGE:contact.html&#125;&#125;...&#123;&#123;ELSE_PAGE&#125;&#125;...&#123;&#123;ENDIF_PAGE&#125;&#125;</code
+        >
+      </p>
+      <p>
+        Matches against the <strong>**final** output path</strong> relative to
+        <code>dist/</code> (e.g., <code>posts/my-post.html</code>). So, do not
+        check for a <code>about.md</code> file. Instead, check always for the
+        html (<code>about.html</code>) version.
+      </p>
+      <p><strong>Example:</strong></p>
+      <pre><code class="language-html">&#123;&#123;IF_PAGE: index.html&#125;&#125;
+  &lt;p&gt;This content is only for the homepage (index.html).&lt;/p&gt;
+&#123;&#123;ELIF_PAGE: about.html&#125;&#125;
+  &lt;p&gt;This content is only for the about page (about.html).&lt;/p&gt;
+&#123;&#123;ELSE_PAGE&#125;&#125;
+  &lt;p&gt;This content is for all other pages.&lt;/p&gt;
+&#123;&#123;ENDIF_PAGE&#125;&#125;</code></pre>
+
+      <h4>2. Conditional: By Source Extension</h4>
+      <p>
+        Syntax:
+        <code
+          >&#123;&#123;IF_EXT: md&#125;&#125;...&#123;&#123;ELIF_EXT:
+          html&#125;&#125;...&#123;&#123;ELSE_EXT&#125;&#125;...&#123;&#123;ENDIF_EXT&#125;&#125;</code
+        >
+      </p>
+      <p>
+        Checks the extension of the original source file (<code>md</code> or
+        <code>html</code>).
+      </p>
+      <p><strong>Example:</strong></p>
+      <pre><code class="language-html">&#123;&#123;IF_EXT: md&#125;&#125;
+  &lt;p&gt;The page was originally a markdown (.md) file.&lt;/p&gt;
+&#123;&#123;ELIF_EXT: html&#125;&#125;
+  &lt;p&gt;The page was originally an HTML file (.html).&lt;/p&gt;
+&#123;&#123;ELSE_EXT&#125;&#125;
+  &lt;p&gt;This page has an unexpected source extension. maybe you can do something cool with this.&lt;/p&gt;
+&#123;&#123;ENDIF_EXT&#125;&#125;</code></pre>
+
+      <h4>3. Negation</h4>
+      <p>
+        While fssg doesn't offer a direct
+        <code>&lbrace;&lbrace;IF_NOT_PAGE&rbrace;&rbrace;</code> or
+        <code>&lbrace;&lbrace;IF_NOT_EXT&rbrace;&rbrace;</code> directive, you
+        can easily achieve this "not if" behavior. The trick is to use the
+        standard <code>IF_PAGE</code> or <code>IF_EXT</code> directive for the
+        condition you want to exclude, leave its content block empty, and then
+        place the content you do want to show within the
+        <code>&lbrace;&lbrace;ELSE_PAGE&rbrace;&rbrace;</code> or in
+        <code>&lbrace;&lbrace;ELSE_EXT&rbrace;&rbrace;</code> block.
+      </p>
+      <pre><code class="language-html">&#123;&#123;IF_PAGE: about.html&#125;&#125;
+&#123;&#123;ELSE_PAGE&#125;&#125;
+  &lt;p&gt;This content is for all other pages.&lt;/p&gt;
+&#123;&#123;ENDIF_PAGE&#125;&#125;</code></pre>
+    </article>
+
+    <article class="doc-article">
+      <h3>Automated Post Listings</h3>
+      <p>
+        Generate dynamic lists of posts, perfect for blogs, news sections, or
+        portfolios. fssg can automatically find your dated content and present
+        it in various ways.
+      </p>
+
+      <h4>1. Post Filename Conventions</h4>
+      <p>
+        For fssg to recognize a file as a "post" eligible for these listings, it
+        must follow a specific naming convention and reside anywhere in
+        <code>src/</code> (except within <code>src/includes/</code> or
+        <code>src/static/</code>). The filename must start with a date prefix:
+      </p>
+      <ul>
+        <li>
+          ISO Format: <code>YYYY-MM-DD-your-post-slug.ext</code> (e.g.,
+          <code>2025-06-02-my-first-post.md</code>)
+        </li>
+        <li>
+          European Format: <code>DD_MM_YYYY-your-post-slug.ext</code> (e.g.,
+          <code>02_06_2025-another-great-article.html</code>)
+        </li>
+        <li>
+          US Format: <code>MM-DD-YYYY-your-post-slug.ext</code> (e.g.,
+          <code>06-02-2025-thoughts-on-fssg.md</code>)
+        </li>
+      </ul>
+      <p>
+        The <code>slug</code> part of the filename (e.g., "my-first-post") is
+        used to generate a human-readable title if one isn't explicitly set with
+        a <code>&#123;&#123;title: ...&#125;&#125;</code> directive in the file.
+      </p>
+
+      <h4>2. Recent Posts List</h4>
+      <p>
+        Use the
+        <code>&#123;&#123;recent-posts ...params... &#125;&#125;</code>
+        directive to display a list of your most recent posts, sorted by date
+        (newest first).
+      </p>
+      <p>
+        You can customize its behavior with the following optional parameters
+        (shown with their default values):
+      </p>
+      <ul>
+        <li>
+          <code>count="10"</code>: Specifies the maximum number of recent posts
+          to display.
+        </li>
+        <li>
+          <code>ul_class="posts"</code>: Sets the CSS class for the generated
+          unordered list (<code>&lt;ul&gt;</code>) element.
+        </li>
+        <li>
+          <code>li_class="post"</code>: Sets the CSS class for each list item
+          (<code>&lt;li&gt;</code>) element.
+        </li>
+        <li>
+          <code>time_class="date"</code>: Sets the CSS class for the
+          <code>&lt;time&gt;</code> element displaying the post's date.
+        </li>
+        <li>
+          <code>link_class="title"</code>: Sets the CSS class for the anchor
+          (<code>&lt;a&gt;</code>) tag linking to the post's title.
+        </li>
+        <li>
+          <code>img_class="thumb"</code>: If <code>show_images="true"</code>,
+          this sets the CSS class for the post's thumbnail image.
+        </li>
+        <li>
+          <code>show_images="false"</code>: Set this to <code>"true"</code> to
+          attempt to display a thumbnail image for each post. See the "Post
+          Image Logic" section below for details on how images are found.
+        </li>
+      </ul>
+      <p>
+        <strong>Example:</strong> Display the 3 most recent posts and show their
+        thumbnails.
+      </p>
+      <pre><code class="language-html">&#123;&#123;recent-posts count="3" show_images="true" ul_class="recent-articles"&#125;&#125;</code></pre>
+
+      <h4>3. All Posts List (Paginated)</h4>
+      <p>
+        Use the
+        <code>&#123;&#123;all-posts ...params... &#125;&#125;</code> directive
+        to list all your posts, typically used for an archive page. This
+        directive supports pagination.
+      </p>
+      <p>Customize it with these optional parameters (defaults shown):</p>
+      <ul>
+        <li>
+          <code>page_size="10"</code>: Determines how many posts appear on each
+          page of the list.
+        </li>
+        <li>
+          <code>page="1"</code>: Specifies the current page number to display.
+          This is essential for static pagination. For example, if you have an
+          <code>archive-p1.html</code> file, you'd use <code>page="1"</code>.
+          For <code>archive-p2.html</code>, you'd use <code>page="2"</code>, and
+          so on.
+        </li>
+        <li>
+          <code>pagination="false"</code>: Set this to <code>"true"</code> to
+          automatically generate "Previous" and "Next" navigation links at the
+          bottom of the post list, allowing users to navigate between pages.
+        </li>
+        <li>
+          Other parameters for CSS classes (<code>ul_class="posts"</code>,
+          <code>li_class="post"</code>, <code>time_class="date"</code>,
+          <code>link_class="title"</code>, <code>img_class="thumb"</code>) and
+          image display (<code>show_images="false"</code>) behave the same as
+          with the <code>&#123;&#123;recent-posts&#125;&#125;</code> directive.
+        </li>
+      </ul>
+      <p>
+        <strong>Example:</strong> Create a paginated list showing 5 posts per
+        page, with navigation links, on the second page of an archive.
+      </p>
+      <pre><code class="language-html">&#123;&#123;all-posts page_size="5" page="2" pagination="true" show_images="true"&#125;&#125;</code></pre>
+      <p>
+        <em>Note on static pagination:</em> To create multiple archive pages
+        (e.g., page 1, page 2), you'll need to create separate source files in
+        <code>src/</code> (like <code>archive-p1.md</code>,
+        <code>archive-p2.md</code>). Each file will use the
+        <code>&#123;&#123;all-posts&#125;&#125;</code> directive with the
+        appropriate <code>page</code> parameter value.
+      </p>
+
+      <h4>4. Post Image Logic (for <code>show_images="true"</code>)</h4>
+      <p>
+        When <code>show_images="true"</code> is used in either
+        <code>&#123;&#123;recent-posts&#125;&#125;</code> or
+        <code>&#123;&#123;all-posts&#125;&#125;</code>, fssg tries to find a
+        thumbnail image for each post using the following order of preference:
+      </p>
+      <ol>
+        <li>
+          <strong>Primary Source:</strong> It extracts the
+          <code>src</code> attribute from the <em>first</em>
+          <code>&lt;img src="..."&gt;</code> tag found within the post's main
+          content. If this path is relative, fssg resolves it to be site-root
+          relative in the final output.
+        </li>
+        <li>
+          <strong>Fallback Source:</strong> If no <code>&lt;img&gt;</code> tag
+          is found in the post's content, fssg looks for an image file in your
+          static assets directory matching the post's slug. Specifically, it
+          searches for
+          <code>src/static/posts/&lt;slug&gt;.(jpg|jpeg|png|gif|webp|svg)</code
+          >. For example, if your post slug is <code>my-first-post</code>, it
+          would look for <code>src/static/posts/my-first-post.jpg</code>, then
+          <code>src/static/posts/my-first-post.png</code>, and so on.
+        </li>
+      </ol>
+      <p>
+        Regardless of where the image is found, the final
+        <code>src</code> attribute in the generated HTML for the post list will
+        always be a site-root relative path (e.g.,
+        <code>/static/img/my-pic.png</code>).
+      </p>
+    </article>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <p><strong>fssg</strong> - Fast Simple Static Site Generator.</p>
+    <p>
+      Released under the
+      <a
+        href="https://github.com/xlc-dev/fssg/blob/main/LICENSE"
+        target="_blank"
+        >MIT License</a
+      >.
+    </p>
+    <p>
+      Crafted with POSIX Shell by
+      <a href="https://github.com/xlc-dev" target="_blank">xlc-dev</a>.
+    </p>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll("pre code").forEach((block) => {
+    let content = block.innerHTML;
+    const classList = block.classList;
+
+    content = content.replace(
+      /(\{\{[^}]+\}\})/g,
+      '<span class="template-tag">$1</span>',
+    );
+
+    if (classList.contains("language-html")) {
+      content = highlightHtmlSyntax(content);
+    } else if (classList.contains("language-shell")) {
+      content = highlightShellSyntax(content);
+    } else if (
+      !classList.contains("language-css") &&
+      !classList.contains("language-javascript") &&
+      content.includes("&lt;") &&
+      content.includes("&gt;")
+    ) {
+      content = highlightHtmlSyntax(content);
+    }
+
+    block.innerHTML = content;
+  });
+
+  function highlightHtmlSyntax(html) {
+    html = html.replace(
+      /(&lt;!--[\s\S]*?--&gt;)/g,
+      '<span class="html-comment">$1</span>',
+    );
+
+    html = html.replace(
+      /(&lt;\/?)([a-zA-Z0-9\-:]+)([^&]*?&gt;)/g,
+      '$1<span class="html-tag-name">$2</span>$3',
+    );
+    return html;
+  }
+
+  function highlightShellSyntax(shell) {
+    shell = shell.replace(/^(#.*)/gm, '<span class="shell-comment">$1</span>');
+    shell = shell.replace(
+      /\b(git|clone|cd|chmod|echo|find|make|serve|watch|jobs|help|quiet|verbose|nocolor|open|wget)\b/g,
+      '<span class="shell-keyword">$1</span>',
+    );
+    shell = shell.replace(
+      /(\.\/fssg)/g,
+      '<span class="shell-command">$1</span>',
+    );
+    shell = shell.replace(
+      /(--help|--watch|--serve|--jobs|--quiet|--verbose|--nocolor|--open|-h|-q|-v|-n|-w|-s|-j|-o)\b/g,
+      '<span class="shell-option">$1</span>',
+    );
+    return shell;
+  }
+
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener("click", function (e) {
+      e.preventDefault();
+      const targetId = this.getAttribute("href");
+      const targetElement = document.querySelector(targetId);
+      if (targetElement) {
+        targetElement.scrollIntoView({
+          behavior: "smooth",
+        });
+      }
+    });
+  });
+
+  document.querySelectorAll("pre").forEach((preElement) => {
+    if (preElement.closest(".code-block-wrapper")) {
+      return;
+    }
+
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("code-block-wrapper");
+
+    preElement.parentNode.insertBefore(wrapper, preElement);
+    wrapper.appendChild(preElement);
+
+    const copyButton = document.createElement("button");
+    copyButton.classList.add("copy-code-button");
+    copyButton.setAttribute("aria-label", "Copy code to clipboard");
+    copyButton.textContent = "Copy";
+    wrapper.appendChild(copyButton);
+
+    copyButton.addEventListener("click", () => {
+      const codeElement = preElement.querySelector("code");
+      const codeToCopy = codeElement ? codeElement.innerText : "";
+
+      navigator.clipboard
+        .writeText(codeToCopy)
+        .then(() => {
+          copyButton.textContent = "Copied!";
+          copyButton.setAttribute("aria-live", "polite");
+          setTimeout(() => {
+            copyButton.textContent = "Copy";
+            copyButton.removeAttribute("aria-live");
+          }, 2000);
+        })
+        .catch((err) => {
+          console.error("Failed to copy code: ", err);
+          copyButton.textContent = "Error";
+          copyButton.setAttribute("aria-live", "assertive");
+          setTimeout(() => {
+            copyButton.textContent = "Copy";
+            copyButton.removeAttribute("aria-live");
+          }, 2000);
+        });
+    });
+  });
+</script>
