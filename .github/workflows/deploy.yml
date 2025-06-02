@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   deploy:
-    name: Deploy
+    name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
@@ -27,13 +27,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Make fssg executable just in case
+        run: chmod +x ./fssg
+
+      - name: Build Site
+        run: ./fssg
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload artifact
+      - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./www/"
+          path: "./dist/"
 
       - name: Deploy to GitHub Pages
         id: deployment
