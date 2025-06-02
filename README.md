@@ -18,14 +18,6 @@
   <a href="https://github.com/xlc-dev/fssg/stargazers">
     <img src="https://img.shields.io/github/stars/xlc-dev/fssg.svg?style=social&label=Star&logo=github" alt="GitHub stars">
   </a>
-  <a href="https://github.com/xlc-dev/fssg/network/members">
-    <img src="https://img.shields.io/github/forks/xlc-dev/fssg.svg?style=social&label=Fork&logo=github" alt="GitHub forks">
-  </a>
-  <br>
-  <a href="https://github.com/xlc-dev/fssg/commits/main">
-    <img src="https://img.shields.io/github/last-commit/xlc-dev/fssg.svg?logo=github&style=flat-square" alt="GitHub last commit">
-  </a>
-  <img src="https://img.shields.io/github/repo-size/xlc-dev/fssg.svg?style=flat-square&logo=github" alt="GitHub repo size">
 </p>
 
 ---
