@@ -4,145 +4,172 @@
   </a>
 </p>
 
-<h1 align="center">fssg - Fast Static Site Generator</h1>
+# fssg
 
-<p align="center">
-  <em>Blazing Fast. Pure Shell. Zero Fuss.</em>
-</p>
+**fssg** is a POSIX-compliant, lightweight static site generator written entirely in shell. It converts Markdown and HTML files under `src/` into a ready-to-deploy `dist/` directory, with support for templating, includes, conditionals, pagination, asset hoisting, and more—no external dependencies required beyond standard POSIX utilities.
 
 <p align="center">
   <a href="https://opensource.org/licenses/MIT">
-    <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License: MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="MIT License">
   </a>
   <img src="https://img.shields.io/badge/POSIX-Compliant-brightgreen.svg?style=flat-square" alt="POSIX Compliant">
   <a href="https://github.com/xlc-dev/fssg/stargazers">
-    <img src="https://img.shields.io/github/stars/xlc-dev/fssg.svg?style=flat-square&logo=github" alt="GitHub stars">
+    <img src="https://img.shields.io/github/stars/xlc-dev/fssg.svg?style=flat-square&logo=github" alt="GitHub Stars">
   </a>
 </p>
 
 ---
 
-fssg is a minimal, lightning-fast static site generator built entirely with POSIX shell. It transforms Markdown and HTML files into a complete website, applying templates, handling includes, conditionals, and more, with zero complex dependencies.
+## Table of Contents
 
-➡️ **For full details, feature deep-dives, and advanced usage, please visit the [fssg Documentation Website](https://xlc-dev.github.io/fssg/).**
+1. [Features](#features)
+2. [Prerequisites](#prerequisites)
+3. [Installation](#installation)
+4. [Quick Start](#quick-start)
+5. [Directory Layout](#directory-layout)
+6. [Command-Line Options](#command-line-options)
+7. [Usage Examples](#usage-examples)
+8. [Advanced Features](#advanced-features)
+9. [License](#license)
 
-## ✨ Core Features
+---
 
-- 🚀 **Lightning Fast:** Pure POSIX shell for maximum build speed.
-- 🪶 **Featherlight & Simple:** No heavy dependencies. Just your shell and content.
-- 📄 **Markdown & HTML:** Write content your way.
-- 🧩 **Templating Power:** Main page template, simple includes, and parameterized block includes.
-- 💡 **Conditional Rendering:** Show/hide content based on output page or source file extension.
-- 🔄 **Dynamic Content:** Automated post listings (recent & all) with pagination.
-- 💅 **Asset Pipeline:** Static file copying and automatic style/script hoisting & deduplication.
-- 🛠️ **Developer Friendly:** Watch mode, built-in dev server, parallel builds, and auto-open in browser.
-- 🛡️ **POSIX Compliant:** Ensures broad portability.
-- ✂️ **Built-in Markdown Parser:** Handles common Markdown syntax without external tools.
+## Features
 
-## ⚙️ Prerequisites
+- **Pure Shell & POSIX-Compliant**
+  No runtime dependencies beyond `sh`, `awk`, `sed`, `find`, `cp`, etc.
 
-- A POSIX-compliant shell (e.g., `sh`, `bash`, `zsh`).
-- Standard POSIX utilities (e.g., `awk`, `sed`, `find`, `cp`). (Usually pre-installed).
+- **Markdown & HTML Support**
+  Built-in Markdown-to-HTML parser (headings, lists, tables, bold/italic, links).
 
-## 🚀 Getting Started
+- **Templating**
+  Global `src/template.html` with `{{title}}` and `{{content}}` placeholders.
 
-### 1. Installation
+- **Includes & Blocks**
+  `{{ include:foo.html }}` and `{{ include-block:foo.html param="value" }}` for reusable snippets.
 
-- **Download the script (recommended for most users):**
+- **Conditional Rendering**
+  `{{ IF_EXT:md }}…{{ ENDIF_EXT }}` or `{{ IF_PAGE:about.html }}` to show/hide content.
 
-  ```shell
-  wget https://github.com/xlc-dev/fssg/raw/main/fssg
-  ```
+- **Post Listings**
+  `{{ recent-posts count="5" }}` and `{{ all-posts page_size="10" pagination="true" }}` with auto-pagination.
 
-  Place `fssg` in your project's root directory.
+- **Asset Pipeline**
+  Copies `src/static/` to `dist/static/`, hoists & de-duplicates `<style>` and `<script>` blocks.
 
-- **Or, clone the repository (for example if you also want `mongoose/ for -s`):**
-  ```shell
-  git clone https://github.com/xlc-dev/fssg.git
-  # Then copy fssg/fssg and fssg/mongoose/ to your project
-  cp fssg/fssg ./my-site/
-  cp -r fssg/mongoose ./my-site/mongoose/ # If using -s (serve)
-  chmod +x ./my-site/fssg
-  ```
+- **Developer Conveniences**
+  Watch mode (`-w`), built-in server (`-s` + `mongoose`), auto-open (`-o`), parallel builds (`-j`).
 
-### 2. Basic Project Structure
+---
 
+## Prerequisites
+
+- A POSIX-compliant shell (`sh`, `bash`, `dash`, `zsh`, etc.)
+- Standard POSIX utilities: `awk`, `sed`, `find`, `cp`, `mkdir`, `rm`, `chmod`, etc.
+
+---
+
+## Installation
+
+### 1. Download the script
+
+```sh
+wget https://github.com/xlc-dev/fssg/raw/main/fssg
+chmod +x fssg
 ```
+
+Place `fssg` in your project root.
+
+### 2. (Optional) Clone repository
+
+If you intend to use the built-in server (`-s`) you may also want the `mongoose` binaries:
+
+```sh
+git clone https://github.com/xlc-dev/fssg.git
+cp fssg/fssg ./my-site/
+cp -r fssg/mongoose ./my-site/mongoose/
+chmod +x ./my-site/fssg
+```
+
+---
+
+## Quick Start
+
+1. **Create your project structure** (see next section).
+2. **Write content** in `src/` as `.md` or `.html`.
+3. **Run the generator**:
+
+   ```sh
+   ./fssg
+   ```
+
+4. **Browse output** in `dist/`.
+
+---
+
+## Directory Layout
+
+```plain
 your-project/
-├── fssg                # The generator script
+├── fssg                    # shell script
 └── src/
-    ├── index.md        # Your content (or .html)
-    ├── template.html   # Main HTML layout
-    └── static/         # (Optional) CSS, images, etc.
-        └── style.css
+    ├── template.html       # global layout ({{title}}, {{content}})
+    ├── index.md            # page content (Markdown or HTML)
+    ├── about.html          # additional pages
+    ├── includes/           # reusable snippets
+    │   └── header.html
+    └── static/             # CSS, images, fonts, etc.
+        └── img/
+            └── logo.png
 ```
 
-(See the [full documentation](https://github.com/xlc-dev/fssg/blob/main/README.md#directory-structure) for more details on structure, includes, etc.)
+- `template.html`: contains your `<head>`/`<body>` skeleton.
+- `src/*.md|html`: content files—Markdown is auto-converted.
+- `src/includes/`: files for `{{ include:… }}` and `{{ include-block:… }}`.
+- `src/static/`: copied verbatim to `dist/static/`.
 
-### 3. Build Your Site
+---
 
-```shell
-./fssg
-```
+## Command-Line Options
 
-Output is generated in the `dist/` directory.
-
-### 4. Development Workflow
-
-For local development with live reload and a server:
-
-```shell
-./fssg -j 100 -s -w -o
-```
-
-(Requires `mongoose/` for the `-s` option. Adjust `-j` (jobs) as needed.)
-
-## 📖 Core Concepts Overview
-
-fssg works by processing files from your `src/` directory into a static website in `dist/`.
-
-- **Main Template (`src/template.html`):** Defines the overall page structure. Uses `{{content}}` for page-specific content and `{{title}}` for the page title.
-- **Content Files (`.md`, `.html`):** Your actual page content. Markdown files are converted to HTML.
-- **Includes (`src/includes/`):** Reusable HTML snippets.
-- **Conditionals:** Control content visibility based on page or file type.
-- **Post Listings:** Automatically generate lists from dated content files.
-- **Static Assets (`src/static/`):** Copied directly to `dist/static/`.
-- **Style/Script Hoisting:** `<style>` tags are moved to `<head>`, `<script>` tags to the end of `<body>`.
-
-## ⚙️ Command-Line Options
-
-```
+```text
 ./fssg [options]
 ```
 
-- `-h, --help`: Show help.
-- `-q, --quiet`: Suppress output (except errors).
-- `-v, --verbose`: Show detailed build info.
-- `-n, --nocolor`: Disable colored output.
-- `-w, --watch`: Watch `src/` for changes and rebuild.
-- `-s, --serve`: Start a local dev server for `dist/`.
-- `-o, --open`: Auto-open browser with `-s`.
-- `-j <number>`: Set parallel build jobs (default: 4).
+- `-h` Show help and exit
+- `-q` Quiet mode (errors only)
+- `-v` Verbose mode (build details)
+- `-n` No color in output
+- `-w` Watch `src/` for changes and rebuild
+- `-s` Start local server (requires `mongoose/`)
+- `-o` Auto-open browser (requires `-s`)
+- `-j <num>` Parallel build jobs (default: 4)
 
-## 📝 Simple Example
+---
 
-**`src/index.md`**:
+## Usage Examples
+
+### Basic Page
+
+`src/index.md`:
 
 ```markdown
-{{title: Home Page}}
+{{title: Home}}
 
-# Welcome!
+# Welcome to My Site
 
-This is an fssg site.
+This site is generated by **fssg**.
 ```
 
-**`src/template.html`**:
+`src/template.html`:
 
 ```html
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8" />
     <title>{{title}}</title>
+    <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body>
     {{content}}
@@ -150,23 +177,65 @@ This is an fssg site.
 </html>
 ```
 
-**Run**: `./fssg`
-
-**Output (`dist/index.html`)**:
-
-```html
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Home Page</title>
-  </head>
-  <body>
-    <h1>Welcome!</h1>
-    <p>This is an fssg site.</p>
-  </body>
-</html>
+```sh
+./fssg
+# → dist/index.html
 ```
 
-## 📜 License
+### Include Snippet
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+`src/includes/footer.html`:
+
+```html
+<footer>
+  <p>&copy; 2025 My Company</p>
+</footer>
+```
+
+Usage in a page:
+
+```html
+{{ include:footer.html }}
+```
+
+### Conditional Content
+
+```html
+{{ IF_EXT:md }}
+<p>This only appears in Markdown-converted pages.</p>
+{{ ENDIF_EXT }} {{ IF_PAGE:about.html }}
+<p>This is the About page.</p>
+{{ ENDIF_PAGE }}
+```
+
+### Post Listing
+
+```html
+<h2>Latest Posts</h2>
+{{ recent-posts count="3" ul_class="posts" li_class="post" show_images="true" }}
+```
+
+---
+
+## Advanced Features
+
+- **Inline Parameters** in `include-block`:
+  ```html
+  {{ include-block:card.html title="Hello" }}
+  <p>Block content goes here</p>
+  {{ endinclude }}
+  ```
+- **Pagination** with `all-posts`:
+  ```html
+  {{ all-posts page_size="5" page="2" pagination="true" }}
+  ```
+- **Style & Script Hoisting**:
+  All `<style>` tags move to `<head>`, `<script>` tags to end of `<body>`, deduplicated.
+
+For full details, see the [fssg Documentation Website](https://xlc-dev.github.io/fssg/).
+
+---
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
