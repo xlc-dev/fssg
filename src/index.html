@@ -1,745 +1,514 @@
-<header class="hero">
-  <div class="container">
-    <img src="static/img/logo.png" alt="fssg Logo" class="logo" />
-    <h1>fssg</h1>
-    <p class="tagline">Blazing Fast. Pure Shell. Zero Fuss.</p>
-    <p class="description">
-      A minimal, lightning-fast static site generator built entirely with POSIX
-      shell. Transform Markdown and HTML into a complete statically built
-      website with powerful features, no complex dependencies.
-    </p>
-    <div class="cta-buttons">
-      <a
-        href="https://github.com/xlc-dev/fssg"
-        target="_blank"
-        class="btn btn-primary"
-        >View on GitHub</a
-      >
-      <a href="#getting-started" class="btn btn-secondary">Get Started</a>
-    </div>
-  </div>
-</header>
+{{title: fssg - Fast, Simple Static Site Generator}}
 
-<section id="why-fssg" class="features-section">
-  <div class="container">
-    <h2>Why Choose fssg?</h2>
-    <div class="features-grid">
-      <div class="feature-item">
-        <div class="feature-icon">🚀</div>
-        <h3>Lightning Fast</h3>
-        <p>Built with pure POSIX shell for maximum build speed.</p>
-      </div>
-      <div class="feature-item">
-        <div class="feature-icon">🪶</div>
-        <h3>Featherlight & Simple</h3>
-        <p>No heavy dependencies. Just your shell and your content.</p>
-      </div>
-      <div class="feature-item">
-        <div class="feature-icon">📄</div>
-        <h3>Markdown & HTML</h3>
-        <p>Write content your way. fssg handles the rest.</p>
-      </div>
-      <div class="feature-item">
-        <div class="feature-icon">🧩</div>
-        <h3>Templating Power</h3>
-        <p>Reusable templates, includes, and conditionals.</p>
-      </div>
-      <div class="feature-item">
-        <div class="feature-icon">🔄</div>
-        <h3>Dynamic Content</h3>
-        <p>Recent posts, pagination, and smart content handling.</p>
-      </div>
-      <div class="feature-item">
-        <div class="feature-icon">🛠️</div>
-        <h3>Developer Friendly</h3>
-        <p>Watch mode, built-in server, parallel builds.</p>
+<main>
+  <section class="hero">
+    <div class="container">
+      <img src="/static/img/logo.png" alt="fssg Logo" class="logo" />
+      <h1>fssg</h1>
+      <p class="tagline">Blazing Fast. Pure Shell. Zero Fuss.</p>
+      <p class="description">
+        A minimal, blazing fast static site generator built entirely with POSIX
+        shell. Transform Markdown and HTML into a complete statically built
+        website with powerful features, no complex dependencies.
+      </p>
+      <div class="cta-buttons">
+        <a
+          href="https://github.com/xlc-dev/fssg"
+          target="_blank"
+          class="btn btn-primary"
+          >View on GitHub</a
+        >
+        <a href="#quick-start" class="btn btn-secondary">Get Started</a>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section id="how-it-works" class="how-it-works-section">
-  <div class="container">
-    <h2>How fssg Works</h2>
-    <p class="intro">
-      fssg takes your raw content and templates, and through a series of
-      shell-powered transformations, builds a complete static website.
-    </p>
-    <div class="steps-container">
-      <div class="step">
-        <div class="step-number">1</div>
-        <div class="step-content">
-          <h3>Write Your Content</h3>
+  <section id="why-fssg" class="feature-showcase-section reveal">
+    <div class="container">
+      <h2>Why Choose fssg?</h2>
+      <div class="feature-showcase-item">
+        <div class="feature-text">
+          <h3>Radical Simplicity. Run Anywhere.</h3>
           <p>
-            Create pages in Markdown (<code>.md</code>) or HTML
-            (<code>.html</code>) in <code>src/</code>. Make sure
-            <code>src/template.html</code> exists and contains
-            <code>&#123;&#123;content&#125;&#125;</code>.
+            With zero dependencies beyond a standard POSIX shell, fssg is the
+            ultimate portable generator. No Node.js, no package manager, no
+            complex toolchain. Just your content and a single script.
           </p>
         </div>
-      </div>
-      <div class="step">
-        <div class="step-number">2</div>
-        <div class="step-content">
-          <h3>fssg Processes your files</h3>
-          <p>
-            Markdown -> HTML, templating, includes, conditionals, post lists,
-            style/script hoisting.
-          </p>
+        <div class="feature-visual">
+          <pre><code class="language-bash">.
+├── fssg
+└── src
+    ├── index.md
+    └── template.html</code></pre>
         </div>
       </div>
-      <div class="step">
-        <div class="step-number">3</div>
-        <div class="step-content">
-          <h3>Static Assets Copied</h3>
+      <div class="feature-showcase-item">
+        <div class="feature-text">
+          <h3>Pure Shell, Peak Performance.</h3>
           <p>
-            Contents of <code>src/static/</code> are copied to
-            <code>dist/static/</code>.
+            By leveraging the raw power of shell and optimized `awk` scripts,
+            fssg builds sites at incredible speeds. Parallel processing is built
+            in, allowing you to scale to hundreds of pages without the wait.
+            Instantaneous builds become the norm.
           </p>
         </div>
+        <div class="feature-visual">
+          <pre><code class="language-bash">./fssg <span class="token option">-j</span> <span class="token value">16</span></code></pre>
+        </div>
       </div>
-      <div class="step">
-        <div class="step-number">4</div>
-        <div class="step-content">
-          <h3>Ready to Deploy!</h3>
-          <p>Optimized site generated in <code>dist/</code>.</p>
+      <div class="feature-showcase-item">
+        <div class="feature-text">
+          <h3>Everything You Need, Nothing You Don't.</h3>
+          <p>
+            A complete development workflow is included out-of-the-box. The
+            built-in file watcher, dev server, and automatic browser opening
+            provide a modern, seamless experience without any external tools.
+          </p>
+        </div>
+        <div class="feature-visual">
+          <pre><code class="language-bash">./fssg <span class="token option">-j</span> <span class="token value">100</span> <span class="token option">-s</span> <span class="token option">-w</span> <span class="token option">-o</span></code></pre>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section id="getting-started" class="getting-started-section">
-  <div class="container">
-    <h2>Get Started with fssg</h2>
-    <ol class="steps-list">
-      <li>
-        <strong>Clone or Download:</strong> Get the script from GitHub and place
-        it wherever you want:
-        <pre><code class="language-shell">wget https://github.com/xlc-dev/fssg/raw/main/fssg</code></pre>
-        <p>Or, if you also want web server included (reccomended):</p>
-        <pre><code class="language-shell">git clone https://github.com/xlc-dev/fssg.git</code></pre>
-        <p>
-          Then, just copy <code>fssg</code> and the
-          <code>mongoose/</code> folder to your project directory.
-        </p>
-      </li>
-      <li>
-        <strong>Structure Your Site:</strong>
-        <ul>
-          <li>
-            Create <code>src/template.html</code> with
-            <code>&#123;&#123;title&#125;&#125;</code> and
-            <code>&#123;&#123;content&#125;&#125;</code>.
-          </li>
-          <li>
-            Add content like <code>src/index.md</code>,
-            <code>src/about.html</code>.
-          </li>
-          <li>Place static assets in <code>src/static/</code>.</li>
-          <li>Create reusable partials in <code>src/includes/</code>.</li>
+  <section id="quick-start" class="quick-start-section reveal">
+    <div class="container">
+      <h2>Quick Start Guide</h2>
+      <div class="steps-container">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Setup Your Project</h3>
+            <p>
+              You can either download just the script or clone the entire
+              repository if you want the optional <code>mongoose</code> dev
+              server.
+            </p>
+            <p>
+              <strong>Option A:</strong> Download only the
+              <code>fssg</code> script.
+            </p>
+            <div class="code-block-wrapper">
+              <pre><code class="language-bash"><span class="token command">wget</span> <span class="token value">https://raw.githubusercontent.com/xlc-dev/fssg/main/fssg</span>
+<span class="token command">chmod</span> <span class="token option">+x</span> <span class="token value">fssg</span></code></pre>
+            </div>
+            <p>
+              <strong>Option B:</strong> Clone the full project, then grab just
+              the <code>mongoose</code> folder and the <code>fssg</code> script.
+            </p>
+            <div class="code-block-wrapper">
+              <pre><code class="language-bash"><span class="token command">git</span> <span class="token subcommand">clone</span> <span class="token value">https://github.com/xlc-dev/fssg.git</span>
+<span class="token command">mkdir</span> <span class="token value">mysite</span>
+<span class="token command">cd</span> <span class="token value">mysite</span>
+
+<span class="token command">cp</span> <span class="token value">../fssg/fssg .</span>
+<span class="token command">cp</span> <span class="token option">-r</span> <span class="token value">../fssg/mongoose .</span></code></pre>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Create Content</h3>
+            <p>
+              Create a master <code>template.html</code> and your first page,
+              <code>index.md</code>. fssg will inject the content from
+              `index.md` into the template.
+            </p>
+            <p><code>src/template.html</code>:</p>
+            <div class="code-block-wrapper">
+              <pre><code class="language-html"><span class="token tag"><span class="token punctuation">&lt;!</span><span class="token doctype-tag">DOCTYPE</span> <span class="token name">html</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token punctuation">&lt;</span>html <span class="token attr-name">lang</span><span class="token attr-value"><span class="token punctuation">=</span>"en"</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span>&#123;&#123;title&#125;&#125;<span class="token tag"><span class="token punctuation">&lt;/</span>title<span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token punctuation">&lt;/</span>head<span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+  &#123;&#123;content&#125;&#125;
+<span class="token tag"><span class="token punctuation">&lt;/</span>body<span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token punctuation">&lt;/</span>html<span class="token punctuation">&gt;</span></span></code></pre>
+            </div>
+            <p><code>src/index.md</code>:</p>
+            <div class="code-block-wrapper">
+              <pre><code class="language-markdown"><span class="token heading"><span class="token punctuation">#</span> Hello, World!</span>
+
+This is my first page built with fssg.</code></pre>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Build & Preview</h3>
+            <p>
+              Run the development command. This builds the site, starts a
+              server, watches for changes, and opens your browser.
+            </p>
+            <div class="code-block-wrapper">
+              <pre><code class="language-bash">./fssg <span class="token option">-j</span> <span class="token value">100</span> <span class="token option">-s</span> <span class="token option">-w</span> <span class="token option">-o</span></code></pre>
+            </div>
+            <p>
+              Your new site is now running at
+              <code>http://localhost:8000</code>! For a deep dive into all
+              features, see the documentation below.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="documentation" class="documentation-section reveal">
+    <div class="container">
+      <h2>Features Deep Dive</h2>
+      <div class="docs-container">
+        <ul class="doc-tabs">
+          <li class="doc-tab active" data-tab="cli">CLI</li>
+          <li class="doc-tab" data-tab="structure">Directory Structure</li>
+          <li class="doc-tab" data-tab="templating">Templating</li>
+          <li class="doc-tab" data-tab="content">Content & Assets</li>
+          <li class="doc-tab" data-tab="conditionals">Conditionals</li>
+          <li class="doc-tab" data-tab="posts">Post Listings</li>
         </ul>
-      </li>
-      <li>
-        <strong>Build Your Site:</strong>
-        <pre><code class="language-shell">./fssg</code></pre>
-      </li>
-      <li>
-        <strong
-          >Or, the reccomended way to use fssg for local development:</strong
-        >
-        <pre><code class="language-shell">./fssg -j 100 -s -w -o</code></pre>
-        <p>
-          This builds with 100 parallel jobs (<code>-j 100</code>), starts a
-          <code>mongoose</code> web server (<code>-s</code>), looks for changes
-          in <code>src/</code>
-          and rebuilds automatically (<code>-w</code>) and opens the website in
-          your browser (<code>-o</code>). This is the recommended way to use
-          fssg for local development.
-        </p>
-      </li>
-    </ol>
-  </div>
-</section>
+        <div class="doc-content-panels">
+          <div class="doc-panel active" id="cli">
+            <article>
+              <h3>Command-Line Interface</h3>
+              <p>
+                The <code>fssg</code> script is controlled via command-line
+                flags.
+              </p>
+              <div class="code-block-wrapper">
+                <pre><code class="language-bash">./fssg <span class="token placeholder">[options]</span></code></pre>
+              </div>
+              <ul>
+                <li>
+                  <code>-h, --help</code>: Display the help message and exit.
+                </li>
+                <li>
+                  <code>-q, --quiet</code>: Suppress all informational output,
+                  showing only errors. Overrides <code>-v</code>.
+                </li>
+                <li>
+                  <code>-v, --verbose</code>: Show detailed per-file processing
+                  information.
+                </li>
+                <li>
+                  <code>-n, --nocolor</code>: Disable colored terminal output.
+                </li>
+                <li>
+                  <code>-w, --watch</code>: After the initial build, watch the
+                  <code>src/</code> directory for changes and automatically
+                  trigger a rebuild.
+                </li>
+                <li>
+                  <code>-s, --serve</code>: Start a local web server for the
+                  <code>dist/</code> directory on port 8000. Requires the
+                  <code>mongoose/</code> binaries.
+                </li>
+                <li>
+                  <code>-o, --open</code>: Automatically open a web browser to
+                  the local server address. Only works when <code>-s</code> is
+                  also used.
+                </li>
+                <li>
+                  <code>-j &lt;number&gt;</code>: Set the number of parallel
+                  build jobs to run. Defaults to 4. Increase for faster builds
+                  on multi-core systems.
+                </li>
+              </ul>
+            </article>
+          </div>
 
-<section id="documentation" class="documentation-section">
-  <div class="container">
-    <h2>fssg Features Deep Dive</h2>
+          <div class="doc-panel" id="structure">
+            <article>
+              <h3>Project Structure</h3>
+              <p>
+                fssg expects a specific directory layout to function correctly.
+                This forces the same structure everywhere, making it easier to
+                switch between different projects.
+              </p>
+              <div class="code-block-wrapper">
+                <pre><code class="language-bash">.
+├── fssg
+├── mongoose/
+│   ├── mongoose_linux
+│   ├── mongoose_mac
+│   └── mongoose_windows.exe
+└── src/
+    ├── includes/
+    │   └── footer.html
+    ├── static/
+    │   ├── css/
+    │   └── img/
+    ├── template.html
+    ├── index.md
+    └── about.html
+</code></pre>
+              </div>
+              <ul>
+                <li><code>src/</code>: The root for all source content.</li>
+                <li>
+                  <code>src/template.html</code>: The master template required
+                  for all pages.
+                </li>
+                <li>
+                  <code>src/includes/</code>: A reserved directory for HTML
+                  snippets that can be included in other files.
+                </li>
+                <li>
+                  <code>src/static/</code>: All contents of this directory are
+                  copied directly to <code>dist/static/</code>.
+                </li>
+                <li>
+                  <code>dist/</code>: The output directory where the generated
+                  site is placed. This is created automatically.
+                </li>
+              </ul>
+            </article>
+          </div>
 
-    <article class="doc-article">
-      <h3>Command-Line Interface (CLI)</h3>
-      <p>
-        Control fssg's behavior with these flags when running
-        <code>./fssg [options]</code>:
-      </p>
-      <ul>
-        <li><code>-h, --help</code>: Display the help message and exit.</li>
-        <li><code>-q, --quiet</code>: Suppress all output except errors.</li>
-        <li><code>-v, --verbose</code>: Show detailed build information.</li>
-        <li>
-          <code>-n, --nocolor</code>: Disable colored output in the terminal.
-        </li>
-        <li>
-          <code>-w, --watch</code>: Watch <code>src/</code> for changes and
-          rebuild automatically.
-        </li>
-        <li>
-          <code>-s, --serve</code>: Start a local Mongoose web server (from
-          <code>./mongoose/</code>) for <code>dist/</code> at
-          <code>http://localhost:8000</code>.
-        </li>
-        <li>
-          <code>-o, --open</code>: Auto-open browser when <code>-s</code> is
-          used.
-        </li>
-        <li>
-          <code>-j, --jobs &lt;number&gt;</code>: Set parallel build jobs
-          (default: 4).
-        </li>
-      </ul>
-    </article>
+          <div class="doc-panel" id="templating">
+            <article>
+              <h3>Templating System</h3>
+              <p>
+                fssg uses a simple but powerful text-based templating system.
+              </p>
+              <h4>Global Template</h4>
+              <p>
+                The file <code>src/template.html</code> is the master layout. It
+                must contain <code>&#123;&#123;content&#125;&#125;</code>, which
+                acts as the placeholder for each page's processed content. It
+                can also contain <code>&#123;&#123;title&#125;&#125;</code>.
+              </p>
+              <h4>Title Variable</h4>
+              <p>The page title is determined with the following priority:</p>
+              <ol>
+                <li>
+                  An explicit
+                  <code>&#123;&#123;title: My Page Title&#125;&#125;</code>
+                  tag anywhere in the page's content file.
+                </li>
+                <li>
+                  If not found, the title is generated from the filename (e.g.,
+                  <code>my-first-post.md</code> becomes "My First Post").
+                </li>
+              </ol>
+              <h4>Simple Includes</h4>
+              <p>
+                To embed a file from <code>src/includes/</code>, use the include
+                directive.
+              </p>
+              <div class="code-block-wrapper">
+                <pre><code class="language-bash"><span class="token punctuation">&#123;&#123;</span><span class="token keyword">include:</span> <span class="token string">footer.html</span><span class="token punctuation">&#125;&#125;</span></code></pre>
+              </div>
+              <h4>Block Includes with Parameters</h4>
+              <p>
+                For more complex components, you can pass parameters and a block
+                of content to an include. The content you provide is injected
+                wherever
+                <code>&#123;&#123;content&#125;&#125;</code> appears inside the
+                include file.
+              </p>
+              <p>Example <code>src/includes/alert.html</code>:</p>
+              <div class="code-block-wrapper">
+                <pre><code class="language-html"><span class="token tag"><span class="token punctuation">&lt;</span>div <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation">=</span>"alert alert-&#123;&#123;type&#125;&#125;"</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token punctuation">&lt;</span>strong<span class="token punctuation">&gt;</span></span>&#123;&#123;alert_title&#125;&#125;:<span class="token tag"><span class="token punctuation">&lt;/</span>strong<span class="token punctuation">&gt;</span></span>
+  &#123;&#123;content&#125;&#125;
+<span class="token tag"><span class="token punctuation">&lt;/</span>div<span class="token punctuation">&gt;</span></span></code></pre>
+              </div>
+              <p>Usage in a page:</p>
+              <div class="code-block-wrapper">
+                <pre><code class="language-bash"><span class="token punctuation">&#123;&#123;</span><span class="token keyword">include-block:</span> <span class="token string">alert.html</span> <span class="token attr-name">type</span><span class="token operator">=</span><span class="token attr-value">"warning"</span> <span class="token attr-name">alert_title</span><span class="token operator">=</span><span class="token attr-value">"Attention"</span><span class="token punctuation">&#125;&#125;</span>
+  <span class="token tag"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>This is an important message.<span class="token tag"><span class="token punctuation">&lt;/</span>p<span class="token punctuation">&gt;</span></span>
+<span class="token punctuation">&#123;&#123;</span><span class="token keyword">endinclude</span><span class="token punctuation">&#125;&#125;</span></code></pre>
+              </div>
+            </article>
+          </div>
 
-    <article class="doc-article">
-      <h3>Directory Structure</h3>
-      <p>fssg expects a specific project layout:</p>
-      <ul>
-        <li>
-          <code>src/</code>: Source directory for all content and templates.
-          <ul>
-            <li>
-              <code>*.md</code>, <code>*.html</code>: Your page content.
-              Subdirectories are preserved.
-            </li>
-            <li><code>template.html</code>: The main HTML layout for pages.</li>
-            <li>
-              <code>includes/</code>: (Optional) For reusable HTML snippets
-              (partials).
-            </li>
-            <li>
-              <code>static/</code>: (Optional) Assets (CSS, JS, images) copied
-              directly to <code>dist/static/</code>.
-            </li>
-          </ul>
-        </li>
-        <li>
-          <code>mongoose/</code>: (Optional) Mongoose server binaries if you
-          want to use <code>-s</code> for a local server.
-        </li>
-        <li><code>./fssg</code>: The generator script.</li>
-      </ul>
-    </article>
+          <div class="doc-panel" id="content">
+            <article>
+              <h3>Content Processing</h3>
+              <h4>Markdown Parser</h4>
+              <p>
+                fssg uses a capable <code>awk</code>-based Markdown parser with
+                support for a wide range of features:
+              </p>
+              <ul>
+                <li>Headings (<code># H1</code> to <code>###### H6</code>)</li>
+                <li>Paragraphs (automatic <code>&lt;p&gt;</code> wrapping)</li>
+                <li>
+                  Raw HTML passthrough (lines that start with
+                  <code>&lt;…&gt;</code>)
+                </li>
+                <li>Blockquotes (<code>&gt; quote</code>)</li>
+                <li>
+                  Unordered Lists (<code>*</code>, <code>-</code>,
+                  <code>+</code>) and Ordered Lists (<code>1.</code>,
+                  <code>2.</code>, …)
+                </li>
+                <li>
+                  Fenced Code Blocks (<code>```lang</code> … <code>```</code>)
+                  and Inline Code (<code>`code`</code>)
+                </li>
+                <li>Links (<code>[text](url)</code>)</li>
+                <li>Images (<code>![alt text](src)</code>)</li>
+                <li>
+                  Emphasis: Bold (<code>**text**</code>), Italic
+                  (<code>*text*</code>), Strikethrough (<code>~~text~~</code>)
+                </li>
+                <li>
+                  Horizontal Rules (<code>---</code>, <code>***</code>,
+                  <code>___</code>)
+                </li>
+                <li>
+                  Tables (GitHub-style with pipes: <code>| a | b |</code>)
+                </li>
+              </ul>
+              <h4>Asset Pipeline</h4>
+              <p>
+                All files and directories inside <code>src/static/</code> are
+                copied recursively to <code>dist/static/</code>.
+              </p>
+              <h4>Style & Script Hoisting</h4>
+              <p>
+                A powerful optimization feature: all
+                <code>&lt;style&gt;...&lt;/style&gt;</code> and
+                <code>&lt;script&gt;...&lt;/script&gt;</code> blocks from your
+                page content are automatically extracted, deduplicated, and
+                moved. Styles are placed just before the closing
+                <code>&lt;/head&gt;</code> tag, and scripts are placed just
+                before the closing <code>&lt;/body&gt;</code> tag. This improves
+                rendering performance and helps organize page-specific code.
+              </p>
+            </article>
+          </div>
 
-    <article class="doc-article">
-      <h3>Core Templating System</h3>
-      <h4>1. Main Page Template</h4>
-      <p>
-        The <code>src/template.html</code> file defines the overall HTML
-        structure for your site's pages.
-      </p>
-      <h4>2. Content Injection</h4>
-      <p>
-        Place <code>&#123;&#123;content&#125;&#125;</code> in
-        <code>src/template.html</code>. The processed content of individual
-        Markdown or HTML files will be inserted here.
-      </p>
-      <h4>3. Dynamic Titles</h4>
-      <p>
-        Use <code>&#123;&#123;title&#125;&#125;</code> in
-        <code>src/template.html</code> (e.g., in <code>&lt;title&gt;</code> or
-        <code>&lt;h1&gt;</code>). The title is sourced by:
-      </p>
-      <ol>
-        <li>
-          An explicit
-          <code>&#123;&#123;title: Your Page Title&#125;&#125;</code>
-          directive at the top of a content file.
-        </li>
-        <li>
-          Otherwise, derived from the filename (e.g.,
-          <code>my-post.md</code> becomes "My Post").
-        </li>
-      </ol>
-    </article>
+          <div class="doc-panel" id="conditionals">
+            <article>
+              <h3>Conditional Logic</h3>
+              <p>
+                You can render content conditionally based on the page being
+                built. This is useful in shared templates or includes.
+              </p>
 
-    <article class="doc-article">
-      <h3>Content File Specifics</h3>
-      <h4>1. Markdown Processing (<code>.md</code> files only)</h4>
-      <p>
-        fssg uses a POSIX awk-based Markdown parser supporting common syntax:
-        headers, links, emphasis, strikethrough, GFM tables, HRs, and HTML
-        passthrough. Inline Markdown within HTML tags is also processed.
-      </p>
-      <p>
-        <em>Important:</em> fssg directives (like
-        <code>&#123;&#123;include:...&#125;&#125;</code>) are processed *after*
-        Markdown conversion. For clarity, place them on their own lines or
-        ensure they are distinct from Markdown syntax.
-      </p>
+              <h4>By Output Page Path</h4>
+              <p>
+                Render content only if the output file path matches. The path is
+                relative to the <code>dist/</code> directory (e.g.,
+                <code>index.html</code>, <code>blog/my-post.html</code>).
+              </p>
+              <div class="code-block-wrapper">
+                <pre><code class="language-bash"><span class="token punctuation">&#123;&#123;</span><span class="token keyword">IF_PAGE:</span> <span class="token string">index.html</span><span class="token punctuation">&#125;&#125;</span>
+  <span class="token tag"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>Only for the homepage.<span class="token tag"><span class="token punctuation">&lt;/</span>p<span class="token punctuation">&gt;</span></span>
+<span class="token punctuation">&#123;&#123;</span><span class="token keyword">ELIF_PAGE:</span> <span class="token string">about.html</span><span class="token punctuation">&#125;&#125;</span>
+  <span class="token tag"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>Only for the about page.<span class="token tag"><span class="token punctuation">&lt;/</span>p<span class="token punctuation">&gt;</span></span>
+<span class="token punctuation">&#123;&#123;</span><span class="token keyword">ELSE_PAGE</span><span class="token punctuation">&#125;&#125;</span>
+  <span class="token tag"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>For all other pages.<span class="token tag"><span class="token punctuation">&lt;/</span>p<span class="token punctuation">&gt;</span></span>
+<span class="token punctuation">&#123;&#123;</span><span class="token keyword">ENDIF_PAGE</span><span class="token punctuation">&#125;&#125;</span></code></pre>
+              </div>
 
-      <h4>2. HTML Files</h4>
-      <p>
-        Used as-is, after fssg directive processing (includes, conditionals,
-        etc.).
-      </p>
-    </article>
+              <h4>By Source File Extension</h4>
+              <p>
+                Render content based on the source file’s extension
+                (<code>md</code>, <code>html</code>, or any other).
+              </p>
+              <div class="code-block-wrapper">
+                <pre><code class="language-bash"><span class="token punctuation">&#123;&#123;</span><span class="token keyword">IF_EXT:</span> <span class="token string">md</span><span class="token punctuation">&#125;&#125;</span>
+  <span class="token tag"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>This content was originally a Markdown file.<span class="token tag"><span class="token punctuation">&lt;/</span>p<span class="token punctuation">&gt;</span></span>
+<span class="token punctuation">&#123;&#123;</span><span class="token keyword">ELIF_EXT:</span> <span class="token string">html</span><span class="token punctuation">&#125;&#125;</span>
+  <span class="token tag"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>This content was originally an HTML file.<span class="token tag"><span class="token punctuation">&lt;/</span>p<span class="token punctuation">&gt;</span></span>
+<span class="token punctuation">&#123;&#123;</span><span class="token keyword">ELSE_EXT</span><span class="token punctuation">&#125;&#125;</span>
+  <span class="token tag"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>This content came from another source format.<span class="token tag"><span class="token punctuation">&lt;/</span>p<span class="token punctuation">&gt;</span></span>
+<span class="token punctuation">&#123;&#123;</span><span class="token keyword">ENDIF_EXT</span><span class="token punctuation">&#125;&#125;</span></code></pre>
+              </div>
+            </article>
+          </div>
 
-    <article class="doc-article">
-      <h3>Asset Pipeline</h3>
-      <h4>1. Static Assets (<code>src/static/</code>)</h4>
-      <p>
-        All contents are copied directly to <code>dist/static/</code>. Ideal for
-        global CSS, JS, images.
-      </p>
-      <h4>2. Style & Script Hoisting</h4>
-      <p>
-        All <code>&lt;style&gt;</code> and <code>&lt;script&gt;</code>
-        blocks from page content are automatically extracted, deduplicated, and
-        moved:
-      </p>
-      <ul>
-        <li>
-          <code>&lt;style&gt;</code> blocks to the <code>&lt;head&gt;</code>.
-        </li>
-        <li>
-          <code>&lt;script&gt;</code> blocks to the end of
-          <code>&lt;body&gt;</code>.
-        </li>
-      </ul>
-    </article>
-
-    <article class="doc-article">
-      <h3>Build Internals</h3>
-      <ul>
-        <li>
-          <strong>Parallel Builds:</strong> Use
-          <code>-j &lt;number&gt;</code> for faster processing of multiple
-          files.
-        </li>
-        <li>
-          <strong>HTML Comment Protection:</strong> fssg directives (e.g.,
-          <code>&#123;&#123;include&#125;&#125;</code>) inside HTML comments are
-          temporarily escaped during processing to prevent misinterpretation,
-          then restored.
-        </li>
-        <li>
-          <strong>Path Normalization:</strong> Internal logic correctly resolves
-          relative paths (e.g., <code>../image.png</code> in post content) to be
-          site-root relative in the final output.
-        </li>
-      </ul>
-    </article>
-
-    <article class="doc-article">
-      <h3>Includes for Reusable Content</h3>
-      <p>Place reusable HTML snippets in <code>src/includes/</code>.</p>
-
-      <h4>1. Simple Include</h4>
-      <p>
-        Syntax:
-        <code>&#123;&#123;include:filename.html&#125;&#125;</code>
-      </p>
-      <p>
-        Directly embeds the content of
-        <code>src/includes/test.html</code>.
-      </p>
-      <pre><code class="language-html">&#123;&#123;include: test.html&#125;&#125;</code></pre>
-
-      <h4>2. Block Includes with Parameters</h4>
-      <p>
-        Syntax:
-        <code
-          >&#123;&#123;include-block: template.html param1="value"&#125;&#125;
-          ... &#123;&#123;content&#125;&#125; ...
-          &#123;&#123;endinclude&#125;&#125;</code
-        >
-      </p>
-      <p>
-        Uses an include file as a template, passing parameters and block
-        content.
-      </p>
-      <ul>
-        <li>
-          <strong>Parameters:</strong> <code>key="value"</code> pairs (values
-          quoted). Access in include as
-          <code>&#123;&#123;key&#125;&#125;</code>.
-        </li>
-        <li>
-          <strong>Block Content:</strong> Content between
-          <code>&#123;&#123;include-block: ...&#125;&#125;</code> and
-          <code>&#123;&#123;endinclude&#125;&#125;</code> is injected into the
-          <code>&#123;&#123;content&#125;&#125;</code> placeholder within the
-          include template.
-        </li>
-      </ul>
-      <p><strong>Example:</strong></p>
-      <p><code>src/includes/alert.html</code>:</p>
-      <pre><code class="language-html">&lt;div class="alert alert-&#123;&#123;type&#125;&#125;"&gt;
-  &lt;strong&gt;&#123;&#123;alert_title&#125;&#125;:&lt;/strong&gt; &#123;&#123;content&#125;&#125;
-&lt;/div&gt;</code></pre>
-      <p>In your page content:</p>
-      <pre><code class="language-html">&#123;&#123;include-block: alert.html type="warning" alert_title="Attention"&#125;&#125;
-  This is an important message for the user.
-&#123;&#123;endinclude&#125;&#125;</code></pre>
-    </article>
-
-    <article class="doc-article">
-      <h3>Conditional Rendering</h3>
-      <p>Show or hide content based on context. Supports nesting.</p>
-
-      <h4>1. Conditional: By Output Page</h4>
-      <p>
-        Syntax:
-        <code
-          >&#123;&#123;IF_PAGE:about.html&#125;&#125;...&#123;&#123;ELIF_PAGE:contact.html&#125;&#125;...&#123;&#123;ELSE_PAGE&#125;&#125;...&#123;&#123;ENDIF_PAGE&#125;&#125;</code
-        >
-      </p>
-      <p>
-        Matches against the <strong>**final** output path</strong> relative to
-        <code>dist/</code> (e.g., <code>posts/my-post.html</code>). So, do not
-        check for a <code>about.md</code> file. Instead, check always for the
-        html (<code>about.html</code>) version.
-      </p>
-      <p><strong>Example:</strong></p>
-      <pre><code class="language-html">&#123;&#123;IF_PAGE: index.html&#125;&#125;
-  &lt;p&gt;This content is only for the homepage (index.html).&lt;/p&gt;
-&#123;&#123;ELIF_PAGE: about.html&#125;&#125;
-  &lt;p&gt;This content is only for the about page (about.html).&lt;/p&gt;
-&#123;&#123;ELSE_PAGE&#125;&#125;
-  &lt;p&gt;This content is for all other pages.&lt;/p&gt;
-&#123;&#123;ENDIF_PAGE&#125;&#125;</code></pre>
-
-      <h4>2. Conditional: By Source Extension</h4>
-      <p>
-        Syntax:
-        <code
-          >&#123;&#123;IF_EXT: md&#125;&#125;...&#123;&#123;ELIF_EXT:
-          html&#125;&#125;...&#123;&#123;ELSE_EXT&#125;&#125;...&#123;&#123;ENDIF_EXT&#125;&#125;</code
-        >
-      </p>
-      <p>
-        Checks the extension of the original source file (<code>md</code> or
-        <code>html</code>).
-      </p>
-      <p><strong>Example:</strong></p>
-      <pre><code class="language-html">&#123;&#123;IF_EXT: md&#125;&#125;
-  &lt;p&gt;The page was originally a markdown (.md) file.&lt;/p&gt;
-&#123;&#123;ELIF_EXT: html&#125;&#125;
-  &lt;p&gt;The page was originally an HTML file (.html).&lt;/p&gt;
-&#123;&#123;ELSE_EXT&#125;&#125;
-  &lt;p&gt;This page has an unexpected source extension. maybe you can do something cool with this.&lt;/p&gt;
-&#123;&#123;ENDIF_EXT&#125;&#125;</code></pre>
-
-      <h4>3. Negation</h4>
-      <p>
-        While fssg doesn't offer a direct
-        <code>&lbrace;&lbrace;IF_NOT_PAGE&rbrace;&rbrace;</code> or
-        <code>&lbrace;&lbrace;IF_NOT_EXT&rbrace;&rbrace;</code> directive, you
-        can easily achieve this "not if" behavior. The trick is to use the
-        standard <code>IF_PAGE</code> or <code>IF_EXT</code> directive for the
-        condition you want to exclude, leave its content block empty, and then
-        place the content you do want to show within the
-        <code>&lbrace;&lbrace;ELSE_PAGE&rbrace;&rbrace;</code> or in
-        <code>&lbrace;&lbrace;ELSE_EXT&rbrace;&rbrace;</code> block.
-      </p>
-      <pre><code class="language-html">&#123;&#123;IF_PAGE: about.html&#125;&#125;
-&#123;&#123;ELSE_PAGE&#125;&#125;
-  &lt;p&gt;This content is for all other pages.&lt;/p&gt;
-&#123;&#123;ENDIF_PAGE&#125;&#125;</code></pre>
-    </article>
-
-    <article class="doc-article">
-      <h3>Automated Post Listings</h3>
-      <p>
-        Generate dynamic lists of posts, perfect for blogs, news sections, or
-        portfolios. fssg can automatically find your dated content and present
-        it in various ways.
-      </p>
-
-      <h4>1. Post Filename Conventions</h4>
-      <p>
-        For fssg to recognize a file as a "post" eligible for these listings, it
-        must follow a specific naming convention and reside anywhere in
-        <code>src/</code> (except within <code>src/includes/</code> or
-        <code>src/static/</code>). The filename must start with a date prefix:
-      </p>
-      <ul>
-        <li>
-          ISO Format: <code>YYYY-MM-DD-your-post-slug.ext</code> (e.g.,
-          <code>2025-06-02-my-first-post.md</code>)
-        </li>
-        <li>
-          European Format: <code>DD_MM_YYYY-your-post-slug.ext</code> (e.g.,
-          <code>02_06_2025-another-great-article.html</code>)
-        </li>
-        <li>
-          US Format: <code>MM-DD-YYYY-your-post-slug.ext</code> (e.g.,
-          <code>06-02-2025-thoughts-on-fssg.md</code>)
-        </li>
-      </ul>
-      <p>
-        The <code>slug</code> part of the filename (e.g., "my-first-post") is
-        used to generate a human-readable title if one isn't explicitly set with
-        a <code>&#123;&#123;title: ...&#125;&#125;</code> directive in the file.
-      </p>
-
-      <h4>2. Recent Posts List</h4>
-      <p>
-        Use the
-        <code>&#123;&#123;recent-posts ...params... &#125;&#125;</code>
-        directive to display a list of your most recent posts, sorted by date
-        (newest first).
-      </p>
-      <p>
-        You can customize its behavior with the following optional parameters
-        (shown with their default values):
-      </p>
-      <ul>
-        <li>
-          <code>count="10"</code>: Specifies the maximum number of recent posts
-          to display.
-        </li>
-        <li>
-          <code>ul_class="posts"</code>: Sets the CSS class for the generated
-          unordered list (<code>&lt;ul&gt;</code>) element.
-        </li>
-        <li>
-          <code>li_class="post"</code>: Sets the CSS class for each list item
-          (<code>&lt;li&gt;</code>) element.
-        </li>
-        <li>
-          <code>time_class="date"</code>: Sets the CSS class for the
-          <code>&lt;time&gt;</code> element displaying the post's date.
-        </li>
-        <li>
-          <code>link_class="title"</code>: Sets the CSS class for the anchor
-          (<code>&lt;a&gt;</code>) tag linking to the post's title.
-        </li>
-        <li>
-          <code>img_class="thumb"</code>: If <code>show_images="true"</code>,
-          this sets the CSS class for the post's thumbnail image.
-        </li>
-        <li>
-          <code>show_images="false"</code>: Set this to <code>"true"</code> to
-          attempt to display a thumbnail image for each post. See the "Post
-          Image Logic" section below for details on how images are found.
-        </li>
-      </ul>
-      <p>
-        <strong>Example:</strong> Display the 3 most recent posts and show their
-        thumbnails.
-      </p>
-      <pre><code class="language-html">&#123;&#123;recent-posts count="3" show_images="true" ul_class="recent-articles"&#125;&#125;</code></pre>
-
-      <h4>3. All Posts List (Paginated)</h4>
-      <p>
-        Use the
-        <code>&#123;&#123;all-posts ...params... &#125;&#125;</code> directive
-        to list all your posts, typically used for an archive page. This
-        directive supports pagination.
-      </p>
-      <p>Customize it with these optional parameters (defaults shown):</p>
-      <ul>
-        <li>
-          <code>page_size="10"</code>: Determines how many posts appear on each
-          page of the list.
-        </li>
-        <li>
-          <code>page="1"</code>: Specifies the current page number to display.
-          This is essential for static pagination. For example, if you have an
-          <code>archive-p1.html</code> file, you'd use <code>page="1"</code>.
-          For <code>archive-p2.html</code>, you'd use <code>page="2"</code>, and
-          so on.
-        </li>
-        <li>
-          <code>pagination="false"</code>: Set this to <code>"true"</code> to
-          automatically generate "Previous" and "Next" navigation links at the
-          bottom of the post list, allowing users to navigate between pages.
-        </li>
-        <li>
-          Other parameters for CSS classes (<code>ul_class="posts"</code>,
-          <code>li_class="post"</code>, <code>time_class="date"</code>,
-          <code>link_class="title"</code>, <code>img_class="thumb"</code>) and
-          image display (<code>show_images="false"</code>) behave the same as
-          with the <code>&#123;&#123;recent-posts&#125;&#125;</code> directive.
-        </li>
-      </ul>
-      <p>
-        <strong>Example:</strong> Create a paginated list showing 5 posts per
-        page, with navigation links, on the second page of an archive.
-      </p>
-      <pre><code class="language-html">&#123;&#123;all-posts page_size="5" page="2" pagination="true" show_images="true"&#125;&#125;</code></pre>
-      <p>
-        <em>Note on static pagination:</em> To create multiple archive pages
-        (e.g., page 1, page 2), you'll need to create separate source files in
-        <code>src/</code> (like <code>archive-p1.md</code>,
-        <code>archive-p2.md</code>). Each file will use the
-        <code>&#123;&#123;all-posts&#125;&#125;</code> directive with the
-        appropriate <code>page</code> parameter value.
-      </p>
-
-      <h4>4. Post Image Logic (for <code>show_images="true"</code>)</h4>
-      <p>
-        When <code>show_images="true"</code> is used in either
-        <code>&#123;&#123;recent-posts&#125;&#125;</code> or
-        <code>&#123;&#123;all-posts&#125;&#125;</code>, fssg tries to find a
-        thumbnail image for each post using the following order of preference:
-      </p>
-      <ol>
-        <li>
-          <strong>Primary Source:</strong> It extracts the
-          <code>src</code> attribute from the <em>first</em>
-          <code>&lt;img src="..."&gt;</code> tag found within the post's main
-          content. If this path is relative, fssg resolves it to be site-root
-          relative in the final output.
-        </li>
-        <li>
-          <strong>Fallback Source:</strong> If no <code>&lt;img&gt;</code> tag
-          is found in the post's content, fssg looks for an image file in your
-          static assets directory matching the post's slug. Specifically, it
-          searches for
-          <code>src/static/posts/&lt;slug&gt;.(jpg|jpeg|png|gif|webp|svg)</code
-          >. For example, if your post slug is <code>my-first-post</code>, it
-          would look for <code>src/static/posts/my-first-post.jpg</code>, then
-          <code>src/static/posts/my-first-post.png</code>, and so on.
-        </li>
-      </ol>
-      <p>
-        Regardless of where the image is found, the final
-        <code>src</code> attribute in the generated HTML for the post list will
-        always be a site-root relative path (e.g.,
-        <code>/static/img/my-pic.png</code>).
-      </p>
-    </article>
-  </div>
-</section>
+          <div class="doc-panel" id="posts">
+            <article>
+              <h3>Automated Post Listings</h3>
+              <p>
+                fssg can automatically generate lists of posts. To be recognized
+                as a post, a file must be named with a date prefix like
+                <code>YYYY-MM-DD-your-post-slug.md</code>.
+              </p>
+              <h4>Recent Posts</h4>
+              <p>Displays a simple list of the most recent posts.</p>
+              <div class="code-block-wrapper">
+                <pre><code class="language-bash"><span class="token punctuation">&#123;&#123;</span><span class="token keyword">recent-posts</span> <span class="token attr-name">count</span><span class="token operator">=</span><span class="token attr-value">"3"</span> <span class="token attr-name">show_images</span><span class="token operator">=</span><span class="token attr-value">"true"</span><span class="token punctuation">&#125;&#125;</span></code></pre>
+              </div>
+              <h4>All Posts (with Pagination)</h4>
+              <p>
+                Generates a list of all posts, typically for an archive page,
+                with optional pagination.
+              </p>
+              <div class="code-block-wrapper">
+                <pre><code class="language-bash"><span class="token punctuation">&#123;&#123;</span><span class="token keyword">all-posts</span> <span class="token attr-name">page_size</span><span class="token operator">=</span><span class="token attr-value">"5"</span> <span class="token attr-name">pagination</span><span class="token operator">=</span><span class="token attr-value">"true"</span><span class="token punctuation">&#125;&#125;</span></code></pre>
+              </div>
+              <h4>Available Parameters</h4>
+              <ul>
+                <li>
+                  <code>count</code> / <code>page_size</code>: Number of posts
+                  to show.
+                </li>
+                <li>
+                  <code>page</code>: The current page number for pagination.
+                </li>
+                <li>
+                  <code>pagination</code>: Set to "true" to show pagination
+                  links.
+                </li>
+                <li>
+                  <code>show_images</code>: Set to "true" to include post
+                  images.
+                </li>
+                <li>
+                  <code>ul_class</code>, <code>li_class</code>,
+                  <code>time_class</code>, <code>link_class</code>,
+                  <code>img_class</code>: Customize the CSS classes of the
+                  generated HTML elements.
+                </li>
+              </ul>
+              <h4>Post Image Logic</h4>
+              <p>
+                When <code>show_images="true"</code>, fssg finds an image using
+                this priority:
+              </p>
+              <ol>
+                <li>
+                  The <code>src</code> of the first <code>&lt;img&gt;</code> tag
+                  found in the post's content.
+                </li>
+                <li>
+                  If no image is in the content, it looks for a fallback image
+                  at
+                  <code>src/static/posts/&lt;slug&gt;.jpg</code> (or .png, .gif,
+                  etc.).
+                </li>
+              </ol>
+            </article>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
 
 <footer class="footer">
   <div class="container">
-    <p><strong>fssg</strong> - Fast Simple Static Site Generator.</p>
     <p>
-      Released under the
+      Built with fssg by
+      <a href="https://github.com/xlc-dev" target="_blank">xlcdev</a>.
+    </p>
+    <p>
+      The fssg script is released under the
       <a
         href="https://github.com/xlc-dev/fssg/blob/main/LICENSE"
         target="_blank"
         >MIT License</a
       >.
     </p>
-    <p>
-      Crafted with POSIX Shell by
-      <a href="https://github.com/xlc-dev" target="_blank">xlc-dev</a>.
-    </p>
   </div>
 </footer>
-
-<script>
-  document.querySelectorAll("pre code").forEach((block) => {
-    let content = block.innerHTML;
-    const classList = block.classList;
-
-    content = content.replace(
-      /(\{\{[^}]+\}\})/g,
-      '<span class="template-tag">$1</span>',
-    );
-
-    if (classList.contains("language-html")) {
-      content = highlightHtmlSyntax(content);
-    } else if (classList.contains("language-shell")) {
-      content = highlightShellSyntax(content);
-    } else if (
-      !classList.contains("language-css") &&
-      !classList.contains("language-javascript") &&
-      content.includes("&lt;") &&
-      content.includes("&gt;")
-    ) {
-      content = highlightHtmlSyntax(content);
-    }
-
-    block.innerHTML = content;
-  });
-
-  function highlightHtmlSyntax(html) {
-    html = html.replace(
-      /(&lt;!--[\s\S]*?--&gt;)/g,
-      '<span class="html-comment">$1</span>',
-    );
-
-    html = html.replace(
-      /(&lt;\/?)([a-zA-Z0-9\-:]+)([^&]*?&gt;)/g,
-      '$1<span class="html-tag-name">$2</span>$3',
-    );
-    return html;
-  }
-
-  function highlightShellSyntax(shell) {
-    shell = shell.replace(/^(#.*)/gm, '<span class="shell-comment">$1</span>');
-    shell = shell.replace(
-      /\b(git|clone|cd|chmod|echo|find|make|serve|watch|jobs|help|quiet|verbose|nocolor|open|wget)\b/g,
-      '<span class="shell-keyword">$1</span>',
-    );
-    shell = shell.replace(
-      /(\.\/fssg)/g,
-      '<span class="shell-command">$1</span>',
-    );
-    shell = shell.replace(
-      /(--help|--watch|--serve|--jobs|--quiet|--verbose|--nocolor|--open|-h|-q|-v|-n|-w|-s|-j|-o)\b/g,
-      '<span class="shell-option">$1</span>',
-    );
-    return shell;
-  }
-
-  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-    anchor.addEventListener("click", function (e) {
-      e.preventDefault();
-      const targetId = this.getAttribute("href");
-      const targetElement = document.querySelector(targetId);
-      if (targetElement) {
-        targetElement.scrollIntoView({
-          behavior: "smooth",
-        });
-      }
-    });
-  });
-
-  document.querySelectorAll("pre").forEach((preElement) => {
-    if (preElement.closest(".code-block-wrapper")) {
-      return;
-    }
-
-    const wrapper = document.createElement("div");
-    wrapper.classList.add("code-block-wrapper");
-
-    preElement.parentNode.insertBefore(wrapper, preElement);
-    wrapper.appendChild(preElement);
-
-    const copyButton = document.createElement("button");
-    copyButton.classList.add("copy-code-button");
-    copyButton.setAttribute("aria-label", "Copy code to clipboard");
-    copyButton.textContent = "Copy";
-    wrapper.appendChild(copyButton);
-
-    copyButton.addEventListener("click", () => {
-      const codeElement = preElement.querySelector("code");
-      const codeToCopy = codeElement ? codeElement.innerText : "";
-
-      navigator.clipboard
-        .writeText(codeToCopy)
-        .then(() => {
-          copyButton.textContent = "Copied!";
-          copyButton.setAttribute("aria-live", "polite");
-          setTimeout(() => {
-            copyButton.textContent = "Copy";
-            copyButton.removeAttribute("aria-live");
-          }, 2000);
-        })
-        .catch((err) => {
-          console.error("Failed to copy code: ", err);
-          copyButton.textContent = "Error";
-          copyButton.setAttribute("aria-live", "assertive");
-          setTimeout(() => {
-            copyButton.textContent = "Copy";
-            copyButton.removeAttribute("aria-live");
-          }, 2000);
-        });
-    });
-  });
-</script>
