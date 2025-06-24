@@ -15,6 +15,7 @@
 #   -h, --help     Display this help message
 #   -q, --quiet    Suppress all output except errors
 #   -v, --verbose  Show detailed build information
+#   -V, --version  Show version information of this version of fssg
 #   -n, --nocolor  Disable colored output
 #   -w, --watch    Watch for changes and rebuild automatically
 #   -o, --open     Open the browser automatically (requires -s)
@@ -50,160 +51,340 @@ log_verbose() { [ "$VERBOSE" -eq 1 ] && printf '%s[DEBUG]%s %s\n' "$BLUE" "$NC" 
 log_warn()    { [ "$QUIET" -eq 0 ] && printf '%s[WARN]%s %s\n'  "$YELLOW" "$NC" "$1" >&2; }
 log_error()   { printf '%s[ERROR]%s %s\n' "$RED" "$NC" "$1" >&2; }
 
-# Convert basic Markdown to HTML
+# Convert Markdown to HTML
 parse_markdown() {
   awk '
-    # process_inline(): handle inline Markdown (links, bold, italic, strike)
-    function process_inline(text, pre, post, rep, m, a, b, c) {
-      # links: [text](url)
-      while (match(text, /\[[^]]+\]\([^)]*\)/)) {
-        pre = substr(text,1,RSTART-1); m = substr(text,RSTART,RLENGTH)
+    BEGIN {
+      list_depth  = 0
+      in_code     = 0
+      in_table    = 0
+      in_thead    = 0
+      in_tbody    = 0
+      in_bq       = 0
+      in_template = 0
+      in_para     = 0
+    }
+
+    # Close a paragraph if open
+    function close_para() {
+      if (in_para) {
+        print "</p>"
+        in_para = 0
+      }
+    }
+
+    # Open a list tag (ul or ol)
+    function open_list(type, indent) {
+      list_depth++
+      list_type[list_depth]   = type
+      list_indent[list_depth] = indent
+      print "<" type ">"
+    }
+
+    # Close one list level
+    function close_list() {
+      t = list_type[list_depth]
+      print "</" t ">"
+      delete list_type[list_depth]
+      delete list_indent[list_depth]
+      list_depth--
+    }
+
+    # Close lists until indent < target
+    function close_lists_to(indent) {
+      while (list_depth > 0 && list_indent[list_depth] >= indent)
+        close_list()
+    }
+
+    # Handle nesting or same-level list items
+    function handle_list(type, indent) {
+      if (list_depth > 0) {
+        if (indent > list_indent[list_depth]) {
+          open_list(type, indent)
+        } else {
+          while (list_depth > 0 &&
+                (list_indent[list_depth] > indent ||
+                 (list_indent[list_depth] == indent &&
+                  list_type[list_depth] != type))) {
+            close_list()
+          }
+          if (list_depth == 0 ||
+              list_indent[list_depth] < indent) {
+            open_list(type, indent)
+          }
+        }
+      } else {
+        open_list(type, indent)
+      }
+    }
+
+    # Close code blocks and/or tables if open
+    function close_code_and_table() {
+      if (in_code) {
+        print "</code></pre>"
+        in_code = 0
+      }
+      if (in_table) {
+        if      (in_tbody) print "</tbody>"
+        else if (in_thead) print "</thead>"
+        print "</table>"
+        in_table = in_thead = in_tbody = 0
+      }
+    }
+    function close_blocks() { close_code_and_table() }
+
+    # Inline replacements: images, links, bold, italic, etc.
+    function process_inline(text, pre, post, m, a, b, c, rep) {
+      # images
+      while (match(text, /!\[[^]]*\]\([^)]+\)/)) {
+        pre  = substr(text,1,RSTART-1)
+        m    = substr(text,RSTART,RLENGTH)
         post = substr(text,RSTART+RLENGTH)
-        a = index(m, "](")
-        b = substr(m, 2, a-2)      # link text
-        c = substr(m, a+2, length(m)-a-2)  # URL (without closing ))
-        if (substr(c, length(c),1)==")") c = substr(c,1,length(c)-1)
-        rep = "<a href=\"" c "\">" b "</a>"
+        a    = index(m, "](")
+        b    = substr(m, 3, a-3)
+        c    = substr(m, a+2, length(m)-a-2)
+        rep  = sprintf("<img src=\"%s\" alt=\"%s\">", c, b)
         text = pre rep post
       }
-      # bold+italic: ***text*** or ___text___
-      while (match(text, /\*\*\*[^*]+\*\*\*/)) {
-        pre = substr(text,1,RSTART-1); m = substr(text,RSTART,RLENGTH)
+      # links
+      while (match(text, /\[[^]]+\]\([^)]+\)/)) {
+        pre  = substr(text,1,RSTART-1)
+        m    = substr(text,RSTART,RLENGTH)
         post = substr(text,RSTART+RLENGTH)
-        b = substr(m,4,length(m)-6)
-        rep = "<strong><em>" b "</em></strong>"
+        a    = index(m, "](")
+        b    = substr(m, 2, a-2)
+        c    = substr(m, a+2, length(m)-a-2)
+        rep  = sprintf("<a href=\"%s\">%s</a>", c, b)
+        text = pre rep post
+      }
+      # bold+italic
+      while (match(text, /\*\*\*[^*]+\*\*\*/)) {
+        pre  = substr(text,1,RSTART-1)
+        m    = substr(text,RSTART,RLENGTH)
+        post = substr(text,RSTART+RLENGTH)
+        b    = substr(m,4,length(m)-6)
+        rep  = "<strong><em>" b "</em></strong>"
         text = pre rep post
       }
       while (match(text, /___[^_]+___/)) {
-        pre = substr(text,1,RSTART-1); m = substr(text,RSTART,RLENGTH)
+        pre  = substr(text,1,RSTART-1)
+        m    = substr(text,RSTART,RLENGTH)
         post = substr(text,RSTART+RLENGTH)
-        b = substr(m,4,length(m)-6)
-        rep = "<strong><em>" b "</em></strong>"
+        b    = substr(m,4,length(m)-6)
+        rep  = "<strong><em>" b "</em></strong>"
         text = pre rep post
       }
-      # bold: **text** or __text__
+      # bold
       while (match(text, /\*\*[^*]+\*\*/)) {
-        pre = substr(text,1,RSTART-1); m = substr(text,RSTART,RLENGTH)
+        pre  = substr(text,1,RSTART-1)
+        m    = substr(text,RSTART,RLENGTH)
         post = substr(text,RSTART+RLENGTH)
-        b = substr(m,3,length(m)-4)
-        rep = "<strong>" b "</strong>"
+        b    = substr(m,3,length(m)-4)
+        rep  = "<strong>" b "</strong>"
         text = pre rep post
       }
       while (match(text, /__[^_]+__/)) {
-        pre = substr(text,1,RSTART-1); m = substr(text,RSTART,RLENGTH)
+        pre  = substr(text,1,RSTART-1)
+        m    = substr(text,RSTART,RLENGTH)
         post = substr(text,RSTART+RLENGTH)
-        b = substr(m,3,length(m)-4)
-        rep = "<strong>" b "</strong>"
+        b    = substr(m,3,length(m)-4)
+        rep  = "<strong>" b "</strong>"
         text = pre rep post
       }
-      # italic: *text* or _text_
+      # italic
       while (match(text, /\*[^*]+\*/)) {
-        pre = substr(text,1,RSTART-1); m = substr(text,RSTART,RLENGTH)
+        pre  = substr(text,1,RSTART-1)
+        m    = substr(text,RSTART,RLENGTH)
         post = substr(text,RSTART+RLENGTH)
-        b = substr(m,2,length(m)-2)
-        rep = "<em>" b "</em>"
+        b    = substr(m,2,length(m)-2)
+        rep  = "<em>" b "</em>"
         text = pre rep post
       }
-      while (match(text, /_[^_]+_/)) {
-        pre = substr(text,1,RSTART-1); m = substr(text,RSTART,RLENGTH)
+      while (match(text, /_([^_]+)_/)) {
+        pre  = substr(text,1,RSTART-1)
+        m    = substr(text,RSTART,RLENGTH)
         post = substr(text,RSTART+RLENGTH)
-        b = substr(m,2,length(m)-2)
-        rep = "<em>" b "</em>"
+        b    = substr(m,2,length(m)-2)
+        rep  = "<em>" b "</em>"
         text = pre rep post
       }
-      # strikethrough: ~~text~~
+      # strikethrough
       while (match(text, /~~[^~]+~~/)) {
-        pre = substr(text,1,RSTART-1); m = substr(text,RSTART,RLENGTH)
+        pre  = substr(text,1,RSTART-1)
+        m    = substr(text,RSTART,RLENGTH)
         post = substr(text,RSTART+RLENGTH)
-        b = substr(m,3,length(m)-4)
-        rep = "<del>" b "</del>"
+        b    = substr(m,3,length(m)-4)
+        rep  = "<del>" b "</del>"
+        text = pre rep post
+      }
+      # inline code
+      while (match(text, /`[^`]+`/)) {
+        pre  = substr(text,1,RSTART-1)
+        m    = substr(text,RSTART,RLENGTH)
+        post = substr(text,RSTART+RLENGTH)
+        b    = substr(m,2,length(m)-2)
+        rep  = "<code>" b "</code>"
         text = pre rep post
       }
       return text
     }
 
-    BEGIN {
-      # state flags for table and include-block contexts
-      in_table=0; in_thead=0; in_tbody=0; in_template_block=0
+    # Fenced code blocks
+    /^[[:space:]]*```/ {
+      if (in_code) {
+        print "</code></pre>"
+        in_code = 0
+      } else {
+        close_para()
+        close_blocks()
+        close_lists_to(0)
+        line = $0
+        sub(/^[[:space:]]*```[[:space:]]*/, "", line)
+        lang = line; sub(/[[:space:]]*$/, "", lang)
+        if (lang != "")
+          print "<pre><code class=\"language-" lang "\">"
+        else
+          print "<pre><code>"
+        in_code = 1
+      }
+      next
     }
-
-    # Pass through include-block tags unchanged here
-    match($0, /\{\{[[:space:]]*include-block:/) && match($0, /\{\{[[:space:]]*endinclude[[:space:]]*\}\}/) { print; next }
-    match($0, /\{\{[[:space:]]*include-block:/) { in_template_block=1; print; next }
-    match($0, /\{\{[[:space:]]*endinclude[[:space:]]*\}\}/) { print; in_template_block=0; next }
-    in_template_block { print; next }
-
-    # Pass through standalone template tags {{ ... }}
-    /^[[:space:]]*\{\{.*\}\}[[:space:]]*$/ { print; next }
-
-    # If line is HTML tags only, process inline markdown inside
-    /^[ \t]*<.*>[ \t]*$/ { print process_inline($0); next }
-
-    # Table row detection: lines starting with '|'
-    $0 ~ /^\|/ {
-      line = $0
-      sub(/^[ \t]*\|/,"",line); sub(/\|[ \t]*$/,"",line)
-      n = split(line, cols, /\|/)
-      # Check if separator row (---|---)
-      is_sep = 1
-      for (i=1; i<=n; i++) {
-        if (cols[i] !~ /^[ \t]*-+[ \t]*$/) is_sep=0
-      }
-      if (!in_table) {
-        # open table
-        print "<table>"
-        in_table=1; in_thead=1; print "<thead>"
-      }
-      if (is_sep) {
-        # switch from header to body
-        if (in_thead) { print "</thead>"; print "<tbody>"; in_thead=0; in_tbody=1 }
-        next
-      }
-      # render header or data cells
-      row=""
-      for (i=1; i<=n; i++) {
-        cell = process_inline(cols[i])
-        if (in_thead) row = row "<th>" cell "</th>"
-        else row = row "<td>" cell "</td>"
-      }
-      print "<tr>" row "</tr>"
+    in_code {
+      gsub(/&/, "&amp;"); gsub(/</, "&lt;"); gsub(/>/, "&gt;")
+      print
       next
     }
 
-    # close table when non-table line encountered
+    # Template passthrough
+    /^\{\{[[:space:]]*include-block:/ {
+      close_para(); in_template = 1; print; next
+    }
+    /^\{\{[[:space:]]*endinclude[[:space:]]*\}\}$/ {
+      close_para(); print; in_template = 0; next
+    }
+    in_template { print; next }
+
+    # Raw HTML
+    /^[[:space:]]*<[^>]+>.*<\/[^>]+>[[:space:]]*$/ {
+      close_para(); close_blocks(); close_lists_to(0)
+      print; next
+    }
+
+    # Blank lines do NOT close lists under CommonMark
+    /^[[:space:]]*$/ {
+      close_para()
+      close_code_and_table()
+      if (in_bq) { print "</blockquote>"; in_bq = 0 }
+      next
+    }
+
+    # Headings (1–6)
+    /^#{1,6}[[:space:]]/ {
+      close_para(); close_blocks(); close_lists_to(0)
+      n = 0
+      while (substr($0,1,1) == "#") {
+        n++; $0 = substr($0,2)
+      }
+      sub(/^[[:space:]]*/, "", $0)
+      printf "<h%d>%s</h%d>\n", n, process_inline($0), n
+      next
+    }
+
+    # Horizontal rule
+    /^[[:space:]]*([-*_][[:space:]]*){3,}$/ {
+      close_para(); close_blocks(); close_lists_to(0)
+      print "<hr>"; next
+    }
+
+    # Blockquote
+    /^[[:space:]]*>/ {
+      close_para()
+      if (!in_bq) {
+        close_blocks(); close_lists_to(0)
+        print "<blockquote>"; in_bq = 1
+      }
+      line = $0; sub(/^[[:space:]]*>[[:space:]]*/, "", line)
+      print "<p>" process_inline(line) "</p>"
+      next
+    }
+
+    # Unordered list
+    /^[[:space:]]*[-*+][[:space:]]+/ {
+      match($0,/^[ \t]*/); indent = RLENGTH
+      close_para(); close_code_and_table()
+      handle_list("ul", indent)
+      sub(/^[[:space:]]*[-*+][[:space:]]*/, "", $0)
+      print "<li>" process_inline($0) "</li>"
+      next
+    }
+
+    # Ordered list
+    /^[[:space:]]*[0-9]+\.[[:space:]]+/ {
+      match($0,/^[ \t]*/); indent = RLENGTH
+      close_para(); close_code_and_table()
+      handle_list("ol", indent)
+      sub(/^[[:space:]]*[0-9]+\.[[:space:]]*/, "", $0)
+      print "<li>" process_inline($0) "</li>"
+      next
+    }
+
+    # GFM tables
+    /^[[:space:]]*\|/ {
+      close_para()
+      line = $0; sub(/^[[:space:]]*\|/,"",line); sub(/\|\s*$/,"",line)
+      n = split(line,cols,/\|/)
+      sep    = "^[[:space:]]*:?-+:?[[:space:]]*$"
+      is_sep = 1
+      for (i=1; i<=n; i++) if (cols[i]!~sep) is_sep=0
+
+      if (!in_table) {
+        close_blocks(); close_lists_to(0)
+        print "<table>"; in_table=1; in_thead=1; delete align
+      }
+      if (is_sep) {
+        for (i=1; i<=n; i++) {
+          cell = cols[i]; gsub(/^[[:space:]]+|[[:space:]]+$/,"",cell)
+          if      (cell~/^:[^-]*-+[^-]*:$/) align[i]="center"
+          else if (cell~/^:[^-]*-+$/)     align[i]="left"
+          else if (cell~/^-+[^-]*:$/)     align[i]="right"
+          else                            align[i]=""
+        }
+        print "</thead>\n<tbody>"
+        in_thead=0; in_tbody=1
+        next
+      }
+      printf "<tr>"
+      for (i=1; i<=n; i++) {
+        cell = process_inline(cols[i])
+        tag  = in_thead ? "th" : "td"
+        if (align[i]!="")
+          printf "<%s align=\"%s\">%s</%s>",tag,align[i],cell,tag
+        else
+          printf "<%s>%s</%s>",tag,cell,tag
+      }
+      print "</tr>"; next
+    }
+
+    # Paragraphs
     {
-      if (in_table && $0 !~ /^\|/) {
-        if (in_tbody) print "</tbody>"
-        else if (in_thead) print "</thead>"
-        print "</table>"
-        in_table=0; in_thead=0; in_tbody=0
+      if (in_bq && $0 !~ /^[[:space:]]*>/) {
+        print "</blockquote>"; in_bq = 0
+      }
+      close_code_and_table()
+      # Note: we do not close lists here (blank lines only do that)
+      if (!in_para) {
+        printf "<p>%s", process_inline($0)
+        in_para = 1
+      } else {
+        printf " %s\n", process_inline($0)
       }
     }
 
-    # Headings H1–H6
-    $0 ~ /^###### / { sub(/^###### /,""); print "<h6>" process_inline($0) "</h6>"; next }
-    $0 ~ /^##### /  { sub(/^##### /, ""); print "<h5>" process_inline($0) "</h5>"; next }
-    $0 ~ /^#### /   { sub(/^#### /,  ""); print "<h4>" process_inline($0) "</h4>"; next }
-    $0 ~ /^### /    { sub(/^### /,   ""); print "<h3>" process_inline($0) "</h3>"; next }
-    $0 ~ /^## /     { sub(/^## /,    ""); print "<h2>" process_inline($0) "</h2>"; next }
-    $0 ~ /^# /      { sub(/^# /,     ""); print "<h1>" process_inline($0) "</h1>"; next }
-
-    # Horizontal rules
-    $0 ~ /^---$/ || $0 ~ /^___$/ || $0 ~ /^\*\*\*$/ { print "<hr>"; next }
-
-    # Blank lines => empty output
-    $0 ~ /^[ \t]*$/ { print ""; next }
-
-    # Default: wrap in <p>
-    { print "<p>" process_inline($0) "</p>" }
-
     END {
-      # ensure any open table is closed
-      if (in_table) {
-        if (in_tbody) print "</tbody>"
-        else if (in_thead) print "</thead>"
-        print "</table>"
-      }
+      close_code_and_table()
+      close_lists_to(0)
+      close_para()
+      if (in_bq) print "</blockquote>"
     }
   '
 }
@@ -441,56 +622,47 @@ process_includes() {
 # Dedupe <style> and <script> blocks
 process_styles_and_scripts() {
   awk '
-    { lines[NR] = $0 }
+    # State machine: 0=normal, 1=in style, 2=in script
+    BEGIN { state=0; buffer="" }
+
+    # Handle single-line tags first, add to collection and skip
+    /<[sS][tT][yY][lL][eE][^>]*>.*<\/[sS][tT][yY][lL][eE]>/ {
+      styles[$0]=1; next
+    }
+    /<[sS][cC][rR][iI][pP][tT][^>]*>.*<\/[sS][cC][rR][iI][pP][tT]>/ {
+      scripts[$0]=1; next
+    }
+
+    # Handle multi-line <style> blocks
+    /<[sS][tT][yY][lL][eE][^>]*>/ { state=1; buffer=$0; next }
+    /<\/[sS][tT][yY][lL][eE]>/ && state==1 {
+      buffer=buffer"\n"$0; styles[buffer]=1; state=0; buffer=""; next
+    }
+    state==1 { buffer=buffer"\n"$0; next }
+
+    # Handle multi-line <script> blocks
+    /<[sS][cC][rR][iI][pP][tT][^>]*>/ { state=2; buffer=$0; next }
+    /<\/[sS][cC][rR][iI][pP][tT]>/ && state==2 {
+      buffer=buffer"\n"$0; scripts[buffer]=1; state=0; buffer=""; next
+    }
+    state==2 { buffer=buffer"\n"$0; next }
+
+    # For normal lines that are not part of any tag, buffer them
+    { content[NR]=$0 }
 
     END {
-      # Collect unique <style> blocks
-      in_s=0; sb=""
-      for(i=1;i<=NR;i++){
-        l=lines[i]
-        if(in_s){ sb=sb"\n"l
-          if(l ~ /<\/[sS][tT][yY][lL][eE]>/){
-            styles[sb]=1; in_s=0
+      # Print the buffered content, injecting hoisted blocks at the right place
+      for (i=1; i<=NR; i++) {
+        if (i in content) {
+          line = content[i]
+          if (line ~ /<\/[hH][eE][aA][dD]>/) {
+            for (s in styles) print s
           }
-        } else if(l~/<[sS][tT][yY][lL][eE][^>]*>/){
-          in_s=1; sb=l
-        }
-      }
-      # Collect unique <script> blocks
-      in_sc=0; scb=""
-      for(i=1;i<=NR;i++){
-        l=lines[i]
-        if(in_sc){ scb=scb"\n"l
-          if(l~/<\/[sS][cC][rR][iI][pP][tT]>/){
-            scripts[scb]=1; in_sc=0
+          if (line ~ /<\/[bB][oO][dD][yY]>/) {
+            for (s in scripts) print s
           }
-        } else if(l~/<[sS][cC][rR][iI][pP][tT][^>]*>/){
-          in_sc=1; scb=l
+          print line
         }
-      }
-      # Print HTML, injecting deduped styles before </head> and scripts before </body>
-      in_s=0; in_sc=0; done_h=0; done_b=0
-      for(i=1;i<=NR;i++){
-        l=lines[i]
-        if(in_s){
-          if(l~/<\/[sS][tT][yY][lL][eE]>/) in_s=0
-          continue
-        }
-        if(in_sc){
-          if(l~/<\/[sS][cC][rR][iI][pP][tT]>/) in_sc=0
-          continue
-        }
-        if(l~/<[sS][tT][yY][lL][eE][^>]*>/){ in_s=1; continue }
-        if(l~/<[sS][cC][rR][iI][pP][tT][^>]*>/){ in_sc=1; continue }
-        if(l~/<\/[hH][eE][aA][dD]>/ && !done_h){
-          for(s in styles) print s
-          done_h=1
-        }
-        if(l~/<\/[bB][oO][dD][yY]>/ && !done_b){
-          for(s in scripts) print s
-          done_b=1
-        }
-        print l
       }
     }
   '
@@ -694,6 +866,19 @@ process_file() {
   log_info "Created $out"
 }
 
+copy_static_assets() {
+  mkdir -p dist/static
+  if [ -d "src/static" ]; then
+      log_info "Copying src/static → dist/static/"
+      # Use cp -a if available for better attribute preservation, fall back to -r
+      if cp -a src/static/. dist/static/ 2>/dev/null; then
+        :
+      else
+        cp -r src/static/. dist/static/
+      fi
+  fi
+}
+
 # Orchestrate full build and asset copy
 build_site() {
   log_info "Starting build..."
@@ -707,11 +892,7 @@ build_site() {
   done
   wait
 
-  mkdir -p dist/static; found=0
-  for d in src/static static; do
-    [ -d "$d" ] && cp -a "$d/." dist/static/ && log_info "Copied $d -> dist/static/" && found=1
-  done
-  [ "$found" -eq 0 ] && log_warn "No static directory found; skipping."
+  copy_static_assets
 
   log_info "${GREEN}Build complete!${NC}"
 }
@@ -763,14 +944,14 @@ display_help() {
     $0 [options]
 
   Options:
-    -h          Display this help message
-    -q          Suppress all output except errors
-    -v          Show detailed build information
-    -n          Disable colored output
-    -w          Watch for changes and rebuild automatically
-    -s          Start a local server for the dist/ directory
-    -o          Open the browser automatically (requires -s)
-    -j <num>    Number of parallel jobs (default: 4)
+    -h, --help          Display this help message
+    -q, --quiet         Suppress all output except errors
+    -v, --verbose       Show detailed build information
+    -n, --no-color      Disable colored output
+    -w, --watch         Watch for changes and rebuild automatically
+    -s, --serve         Start a local server for the dist/ directory
+    -o, --open          Open the browser automatically (requires -s)
+    -j, --jobs <num>    Number of parallel jobs (default: 4)
 EOF
 }
 
@@ -778,7 +959,7 @@ EOF
 # Entrypoint and main control flow
 # -----------------------------------------------------------------------------------------
 
-# Default settings for command-line flags
+VERSION="1.0"
 QUIET=0
 VERBOSE=0
 MAX_JOBS=4
@@ -788,19 +969,68 @@ OPEN_BROWSER=0
 NO_COLOR=0
 SERVER_PID=""
 
-# Parse command-line options (POSIX getopts)
-while getopts "hqvwnsoj:" opt; do
-	case "$opt" in
-		h) display_help; exit 0 ;;
-		q) QUIET=1; VERBOSE=0 ;;
-		v) VERBOSE=1; QUIET=0 ;;
-		w) WATCH=1 ;;
-		n) NO_COLOR=1 ;;
-		s) SERVE=1 ;;
-		o) OPEN_BROWSER=1 ;;
-		j) MAX_JOBS="$OPTARG" ;;
-		*) display_help; exit 1 ;;
-	esac
+# Parse command-line options
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h|--help)
+      display_help
+      exit 0
+      ;;
+    -q|--quiet)
+      QUIET=1; VERBOSE=0
+      shift
+      ;;
+    -v|--verbose)
+      VERBOSE=1; QUIET=0
+      shift
+      ;;
+    -V|--version)
+      echo "fssg version $VERSION"
+      exit 0
+      ;;
+    -n|--nocolor)
+      NO_COLOR=1
+      shift
+      ;;
+    -w|--watch)
+      WATCH=1
+      shift
+      ;;
+    -s|--serve)
+      SERVE=1
+      shift
+      ;;
+    -o|--open)
+      OPEN_BROWSER=1
+      shift
+      ;;
+    --jobs=*)
+      MAX_JOBS="${1#*=}"
+      shift
+      ;;
+    -j|--jobs)
+      shift
+      if [ -n "$1" ] && [ "${1%%[0-9]*}" != "$1" ]; then
+        MAX_JOBS="$1"
+        shift
+      else
+        echo "Error: --jobs requires a numeric argument" >&2
+        exit 1
+      fi
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      display_help
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac
 done
 
 if [ "$NO_COLOR" -eq 1 ] || ! [ -t 1 ]; then
