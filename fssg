@@ -947,6 +947,7 @@ display_help() {
     -h, --help          Display this help message
     -q, --quiet         Suppress all output except errors
     -v, --verbose       Show detailed build information
+    -V, --version       Show version information of this version of fssg
     -n, --no-color      Disable colored output
     -w, --watch         Watch for changes and rebuild automatically
     -s, --serve         Start a local server for the dist/ directory
