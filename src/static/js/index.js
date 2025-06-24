@@ -65,4 +65,12 @@ document.addEventListener("DOMContentLoaded", function() {
   revealElements.forEach((el) => {
     revealObserver.observe(el);
   });
+
+  document.querySelectorAll(".code-block-wrapper").forEach((wrapper) => {
+    const btn = wrapper.querySelector(".copy-code-button");
+    if (!btn) return;
+    wrapper.addEventListener("scroll", (e) => {
+      btn.style.transform = `translateX(${e.target.scrollLeft}px)`;
+    });
+  });
 });
