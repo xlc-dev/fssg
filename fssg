@@ -96,24 +96,21 @@ parse_markdown() {
         close_list()
     }
 
-    # Handle nesting or same-level list items
+    # Handle nesting, de-denting, or same-level list items.
+    # This rewritten function is simpler and more robust.
     function handle_list(type, indent) {
-      if (list_depth > 0) {
-        if (indent > list_indent[list_depth]) {
-          open_list(type, indent)
-        } else {
-          while (list_depth > 0 &&
-                (list_indent[list_depth] > indent ||
-                 (list_indent[list_depth] == indent &&
-                  list_type[list_depth] != type))) {
-            close_list()
-          }
-          if (list_depth == 0 ||
-              list_indent[list_depth] < indent) {
-            open_list(type, indent)
-          }
-        }
-      } else {
+      # First, close any lists that are more deeply indented than the
+      # current item, or lists of a different type at the same level.
+      while (list_depth > 0 &&
+             (list_indent[list_depth] > indent ||
+              (list_indent[list_depth] == indent &&
+               list_type[list_depth] != type))) {
+        close_list()
+      }
+
+      # Now, open a new list if we are not in one, or if the current
+      # item is more indented than the current list level.
+      if (list_depth == 0 || list_indent[list_depth] < indent) {
         open_list(type, indent)
       }
     }
@@ -257,17 +254,31 @@ parse_markdown() {
 
     # Template passthrough
     /^\{\{[[:space:]]*include-block:/ {
-      close_para(); in_template = 1; print; next
+      close_para()
+      in_template = 1
+      print
+      next
     }
-    /^\{\{[[:space:]]*endinclude[[:space:]]*\}\}$/ {
-      close_para(); print; in_template = 0; next
+    # If we are in a template and see the end tag, print the line,
+    # turn off template mode, and move to the next line.
+    # This MUST come before the general "in_template" rule.
+    in_template && /\{\{[[:space:]]*endinclude[[:space:]]*\}\}/ {
+      print
+      in_template = 0
+      next
     }
-    in_template { print; next }
+    # For any other line while in a template, just print it.
+    in_template {
+      print
+      next
+    }
 
-    # Raw HTML
-    /^[[:space:]]*<[^>]+>.*<\/[^>]+>[[:space:]]*$/ {
-      close_para(); close_blocks(); close_lists_to(0)
-      print; next
+    # Raw HTML passthrough.
+    /^[[:space:]]*<\/?([a-zA-Z])/ {
+      close_para()
+      close_list()
+      print
+      next
     }
 
     # Blank lines do NOT close lists under CommonMark
@@ -752,7 +763,7 @@ render_posts() {
     printf '  <li class="%s">\n' "$lcls"
     if [ "$show" = "true" ] && [ -n "$img" ]; then
       case "$img" in http://*|https://*|//*) src="$img";;
-                      *) src="/${img#*/}";;
+                      *) src="/static/${img#*/}";;
       esac
       printf '    <img class="%s" src="%s" alt="%s">\n' "$icls" "$src" "$title"
     fi
@@ -835,8 +846,10 @@ process_post_directives() {
 
 # Full pipeline for each source file
 process_file() {
-  file="$1"; ext="${file##*.}"
-  rel="${file#src/}"; out="dist/${rel%.*}.html"
+  file="$1"
+  ext="${file##*.}"
+  rel="${file#src/}"
+  out="dist/${rel%.*}.html"
   mkdir -p "$(dirname "$out")"
   log_verbose "Processing $file -> $out"
 
@@ -866,33 +879,63 @@ process_file() {
   log_info "Created $out"
 }
 
-copy_static_assets() {
-  mkdir -p dist/static
-  if [ -d "src/static" ]; then
-      log_info "Copying src/static → dist/static/"
-      # Use cp -a if available for better attribute preservation, fall back to -r
-      if cp -a src/static/. dist/static/ 2>/dev/null; then
-        :
-      else
-        cp -r src/static/. dist/static/
-      fi
-  fi
-}
 
 # Orchestrate full build and asset copy
 build_site() {
-  log_info "Starting build..."
-  rm -rf dist; mkdir -p dist
-  jobs=0
-  find src \( -path src/includes -o -name template.html -o -path src/static \) -prune -o \
-    -type f \( -name '*.md' -o -name '*.html' \) -print |
-  while IFS= read -r f; do
-    process_file "$f" & jobs=$((jobs+1))
-    [ "$jobs" -ge "$MAX_JOBS" ] && wait && jobs=0
-  done
-  wait
+  log_verbose "Starting build..."
 
-  copy_static_assets
+  # Clean output and copy static assets
+  rm -rf dist
+  mkdir -p dist/static
+  if [ -d src/static ]; then
+    log_info "Copying src/static -> dist/static/"
+    # Try POSIX-cp -R, fallback to -r
+    if cp -R src/static/. dist/static/ >/dev/null 2>&1; then
+      :
+    else
+      cp -r src/static/. dist/static/
+    fi
+  fi
+
+  # Gather the list of files (split on newline only)
+  OLD_IFS=$IFS
+  IFS='
+'
+  files=$(find src \
+    \( -path src/includes -o -name template.html -o -path src/static \) -prune \
+    -o -type f \( -name '*.md' -o -name '*.html' \) -print)
+  IFS=$OLD_IFS
+
+  pids=""
+  count=0
+
+  for f in $files; do
+    process_file "$f" &
+    pid=$!
+    # accumulate PIDs in a space-separated string
+    if [ -z "$pids" ]; then
+      pids="$pid"
+    else
+      pids="$pids $pid"
+    fi
+    count=$((count + 1))
+
+    # throttle if we've launched $MAX_JOBS
+    if [ "$count" -ge "$MAX_JOBS" ]; then
+      for wp in $pids; do
+        wait "$wp"
+      done
+      pids=""
+      count=0
+    fi
+  done
+
+  # wait for any remaining workers
+  if [ -n "$pids" ]; then
+    for wp in $pids; do
+      wait "$wp"
+    done
+  fi
 
   log_info "${GREEN}Build complete!${NC}"
 }
@@ -900,19 +943,21 @@ build_site() {
 # Choose the correct Mongoose binary for the current OS and launch it,
 # serving the dist/ directory at http://localhost:8000.
 start_server() {
-	case "$(uname -s)" in
-		CYGWIN*|MINGW*|MSYS*) MONGOOSE_BIN="./mongoose/mongoose_windows.exe" ;;
-		Linux*) MONGOOSE_BIN="./mongoose/mongoose_linux" ;;
-		Darwin*) MONGOOSE_BIN="./mongoose/mongoose_mac" ;;
-		*) MONGOOSE_BIN="./mongoose/mongoose_linux" ;;
-	esac
-	if [ ! -x "$MONGOOSE_BIN" ]; then
-		log_error "Mongoose binary not found or not executable."
-		exit 1
-	fi
-	log_info "Starting server at http://localhost:8000"
-	"$MONGOOSE_BIN" -d dist/ -v 0 &
-	SERVER_PID=$!
+  case "$(uname -s)" in
+    CYGWIN*|MINGW*|MSYS*) MONGOOSE_BIN="./mongoose/mongoose_windows.exe" ;;
+    Linux*)               MONGOOSE_BIN="./mongoose/mongoose_linux"      ;;
+    Darwin*)              MONGOOSE_BIN="./mongoose/mongoose_mac"        ;;
+    *)                    MONGOOSE_BIN="./mongoose/mongoose_linux"      ;;
+  esac
+
+  if [ ! -x "$MONGOOSE_BIN" ]; then
+    log_error "Mongoose binary not found or not executable."
+    exit 1
+  fi
+
+  "$MONGOOSE_BIN" -d dist/ -v 0 &
+  SERVER_PID=$!
+  log_info "Server started at http://localhost:8000 (press Ctrl+C to stop)"
 }
 
 # Open the default web browser to http://localhost:8000, depending on OS.
@@ -1047,21 +1092,30 @@ fi
 # Ensure the Mongoose server (if started) is killed when the script exits.
 trap 'if [ -n "$SERVER_PID" ]; then kill "$SERVER_PID"; fi' EXIT
 
+get_src_hash() {
+ find src -type f -exec md5sum {} + 2>/dev/null | md5sum | awk '{print $1}'
+}
+
 if [ "$WATCH" -eq 1 ]; then
   build_site
+  last_hash=$(get_src_hash)
+
   if [ "$SERVE" -eq 1 ]; then
     start_server
-    [ "$OPEN_BROWSER" -eq 1 ] && open_browser
+    if [ "$OPEN_BROWSER" -eq 1 ]; then
+      open_browser
+    fi
   fi
 
-  last_hash=$(find src -type f -exec cksum {} + | cksum)
+  log_verbose "Watching for file changes in src/..."
   while true; do
-    sleep 1
-    current_hash=$(find src -type f -exec cksum {} + | cksum)
+    sleep 0.2
+    current_hash=$(get_src_hash)
     if [ "$current_hash" != "$last_hash" ]; then
-      log_info "Change detected, rebuilding..."
+      log_verbose "Change detected, rebuilding..."
       build_site
-      last_hash="$current_hash"
+      last_hash=$(get_src_hash)
+      log_verbose "Watching for file changes in src/..."
     fi
   done
 else
@@ -1069,7 +1123,6 @@ else
   if [ "$SERVE" -eq 1 ]; then
     start_server
     [ "$OPEN_BROWSER" -eq 1 ] && open_browser
-    log_info "Server is running at http://localhost:8000 (Press Ctrl+C to stop)"
     wait "$SERVER_PID"
   fi
 fi
