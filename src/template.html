@@ -3,16 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>fssg - Fast Static Site Generator</title>
+    <link href="{{BASE_URL}}static/css/style.css" rel="stylesheet" />
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="{{BASE_URL}}/static/img/logo.png"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="fssg - Fast Static Site Generator" />
+    <meta name="twitter:title" content="fssg - Fast Static Site Generator" />
     <meta
       property="description"
       content="fssg is a minimal, fast static site generator built with POSIX shell scripting."
     />
-    <title>fssg - Fast Static Site Generator</title>
-    <link href="static/css/style.css" rel="stylesheet" />
-    <link rel="icon" type="image/x-icon" href="static/img/logo.png" />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="fssg - Fast Static Site Generator" />
-    <meta name="twitter:title" content="fssg - Fast Static Site Generator" />
     <meta
       property="og:description"
       content="fssg is a minimal, fast static site generator built with POSIX shell scripting."
@@ -37,6 +41,6 @@
   </head>
   <body>
     {{content}}
-    <script src="/static/js/index.js"></script>
+    <script src="{{BASE_URL}}/static/js/index.js"></script>
   </body>
 </html>

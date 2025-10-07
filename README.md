@@ -1,24 +1,16 @@
-<p align="center">
-  <a href="https://github.com/xlc-dev/fssg">
-    <img src="./src/static/img/logo.png" alt="fssg Logo" width="150">
-  </a>
-</p>
-
-# fssg
-
-**fssg** is a POSIX-compliant, lightweight static site generator written entirely in shell. It converts Markdown and HTML files under `src/` into a ready-to-deploy `dist/` directory, with support for templating, includes, conditionals, pagination, asset hoisting, and more—no external dependencies required beyond standard POSIX utilities.
-
-<p align="center">
-  <a href="https://opensource.org/licenses/MIT">
-    <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="MIT License">
-  </a>
-  <img src="https://img.shields.io/badge/POSIX-Compliant-brightgreen.svg?style=flat-square" alt="POSIX Compliant">
-  <a href="https://github.com/xlc-dev/fssg/stargazers">
-    <img src="https://img.shields.io/github/stars/xlc-dev/fssg.svg?style=flat-square&logo=github" alt="GitHub Stars">
-  </a>
-</p>
-
----
+<div style="display: flex; align-items: center; justify-content: space-between;">
+  <div style="flex: 1;">
+    <h1>fssg</h1>
+    <p><strong>fssg</strong> is a portable, dependency-free static site generator written entirely
+    in POSIX shell and AWK. It recursively processes Markdown (.md) and .html
+    files in <code>src/</code> and outputs a minified, deployable website in <code>dist/</code>.</p>
+  </div>
+  <div>
+    <a href="https://github.com/xlc-dev/fssg">
+      <img src="./src/static/img/logo.png" alt="fssg Logo" width="150">
+    </a>
+  </div>
+</div>
 
 ## Table of Contents
 
@@ -32,49 +24,40 @@
 8. [Advanced Features](#advanced-features)
 9. [License](#license)
 
----
-
 ## Features
 
 - **Pure Shell & POSIX-Compliant**
   No runtime dependencies beyond `sh`, `awk`, `sed`, `find`, `cp`, etc.
 
 - **Markdown & HTML Support**
-  Built-in Markdown-to-HTML parser (headings, lists, tables, bold/italic, links).
+  Built-in Markdown-to-HTML parser with support for headings, paragraphs, blockquotes, lists, tables, links, images, code blocks, and more.
 
 - **Templating**
-  Global `src/template.html` with `{{title}}` and `{{content}}` placeholders.
+  Global `src/template.html` with `{{title}}` and `{{content}}` placeholders, plus `{{BASE_URL}}` for proper asset paths.
 
 - **Includes & Blocks**
-  `{{ include:foo.html }}` and `{{ include-block:foo.html param="value" }}` for reusable snippets.
+  `{{ include:foo.html }}` and `{{ include-block:foo.html param="value" }}` for reusable snippets with optional Markdown processing.
 
 - **Conditional Rendering**
-  `{{ IF_EXT:md }}…{{ ENDIF_EXT }}` or `{{ IF_PAGE:about.html }}` to show/hide content.
-
-- **Post Listings**
-  `{{ recent-posts count="5" }}` and `{{ all-posts page_size="10" pagination="true" }}` with auto-pagination.
+  `{{ IF_EXT:md }}...{{ ENDIF_EXT }}` or `{{ IF_PAGE:about.html }}` to show/hide content based on file extension or output path.
 
 - **Asset Pipeline**
-  Copies `src/static/` to `dist/static/`, hoists & de-duplicates `<style>` and `<script>` blocks.
+  Copies `src/static/` to `dist/static/`, hoists `<style>` and `<script>` blocks to appropriate locations.
 
 - **Developer Conveniences**
-  Watch mode (`-w`), built-in server (`-s` + `mongoose`), auto-open (`-o`), parallel builds (`-j`).
-
----
+  Watch mode (`-w`), built-in server (`-s` with multiple server options), auto-open (`-o`), parallel builds (`-j` with default of 100), and auto-reload functionality.
 
 ## Prerequisites
 
 - A POSIX-compliant shell (`sh`, `bash`, `dash`, `zsh`, etc.)
 - Standard POSIX utilities: `awk`, `sed`, `find`, `cp`, `mkdir`, `rm`, `chmod`, etc.
 
----
-
 ## Installation
 
 ### 1. Download the script
 
 ```sh
-wget https://github.com/xlc-dev/fssg/raw/main/fssg
+wget https://raw.githubusercontent.com/xlc-dev/fssg/main/fssg
 chmod +x fssg
 ```
 
@@ -91,21 +74,17 @@ cp -r fssg/mongoose ./my-site/mongoose/
 chmod +x ./my-site/fssg
 ```
 
----
-
 ## Quick Start
 
 1. **Create your project structure** (see next section).
 2. **Write content** in `src/` as `.md` or `.html`.
 3. **Run the generator**:
 
-   ```sh
-   ./fssg
-   ```
+ ```sh
+ ./fssg
+ ```
 
 4. **Browse output** in `dist/`.
-
----
 
 ## Directory Layout
 
@@ -125,10 +104,8 @@ your-project/
 
 - `template.html`: contains your `<head>`/`<body>` skeleton.
 - `src/*.md|html`: content files—Markdown is auto-converted.
-- `src/includes/`: files for `{{ include:… }}` and `{{ include-block:… }}`.
+- `src/includes/`: files for `{{ include:... }}` and `{{ include-block:... }}`.
 - `src/static/`: copied verbatim to `dist/static/`.
-
----
 
 ## Command-Line Options
 
@@ -136,16 +113,24 @@ your-project/
 ./fssg [options]
 ```
 
-- `-h` Show help and exit
-- `-q` Quiet mode (errors only)
-- `-v` Verbose mode (build details)
-- `-n` No color in output
-- `-w` Watch `src/` for changes and rebuild
-- `-s` Start local server (requires `mongoose/`)
-- `-o` Auto-open browser (requires `-s`)
-- `-j <num>` Parallel build jobs (default: 4)
+- `-h, --help` Show help and exit
+- `-V, --version` Print the script's version and exit
+- `-q, --quiet` Quiet mode (errors only)
+- `-v, --verbose` Verbose mode (build details)
+- `-n, --nocolor` No color in output
+- `-w, --watch` Watch `src/` for changes and rebuild
+- `-s, --serve` Start local server (prefers mongoose, falls back to python)
+- `-o, --open` Auto-open browser (requires `-s`)
+- `-m, --minify` Disable HTML minification (enabled by default)
+- `-j <num>` Parallel build jobs (default: 100)
 
----
+### Environment Variables
+
+- `FSSG_BASE_URL`: Base URL for the website (default: empty string)
+- `FSSG_SERVER_CMD`: Override the server command used by `-s`
+- `FSSG_SERVER_PORT`: Port used by the dev server (default: 8000)
+- `FSSG_AWK`: Custom command for the awk executable (default: awk)
+- `FSSG_AWK_OPTS`: Custom options for the awk executable (default: none)
 
 ## Usage Examples
 
@@ -153,7 +138,7 @@ your-project/
 
 `src/index.md`:
 
-```markdown
+````markdown
 {{title: Home}}
 
 # Welcome to My Site
@@ -169,7 +154,7 @@ This site is generated by **fssg**.
   <head>
     <meta charset="UTF-8" />
     <title>{{title}}</title>
-    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="{{BASE_URL}}/static/style.css" />
   </head>
   <body>
     {{content}}
@@ -198,43 +183,68 @@ Usage in a page:
 {{ include:footer.html }}
 ```
 
+### Include-Block with Parameters
+
+`src/includes/alert.html`:
+
+```html
+<div class="alert alert-{{type}}">
+  <h4>{{alert_title}}</h4>
+  {{content}}
+</div>
+```
+
+Usage in a page:
+
+```html
+{{ include-block:alert.html type="warning" alert_title="Attention" markdown="true" }}
+  This is **Markdown** content inside the block.
+{{ endinclude }}
+```
+
 ### Conditional Content
 
 ```html
 {{ IF_EXT:md }}
-<p>This only appears in Markdown-converted pages.</p>
-{{ ENDIF_EXT }} {{ IF_PAGE:about.html }}
-<p>This is the About page.</p>
+  <p>This only appears in Markdown-converted pages.</p>
+{{ ENDIF_EXT }}
+
+{{ IF_PAGE:about.html }}
+  <p>This only appears in Markdown-converted pages.</p>
 {{ ENDIF_PAGE }}
 ```
 
-### Post Listing
+### Development Workflow
 
-```html
-<h2>Latest Posts</h2>
-{{ recent-posts count="3" ul_class="posts" li_class="post" show_images="true" }}
+```sh
+# Build with verbose output
+./fssg -v
+
+# Build and start server with auto-reload
+./fssg -s -w -o
+
+# Build with 200 parallel jobs for large sites
+./fssg -j 200
 ```
-
----
 
 ## Advanced Features
 
-- **Inline Parameters** in `include-block`:
-  ```html
-  {{ include-block:card.html title="Hello" }}
-  <p>Block content goes here</p>
-  {{ endinclude }}
-  ```
-- **Pagination** with `all-posts`:
-  ```html
-  {{ all-posts page_size="5" page="2" pagination="true" }}
-  ```
 - **Style & Script Hoisting**:
-  All `<style>` tags move to `<head>`, `<script>` tags to end of `<body>`, deduplicated.
+  All `<style>` tags move to `<head>`, `<script>` tags to end of `<body>`, preserving discovery order.
+
+- **Minification**:
+  Enabled by default, removes HTML comments, extra whitespace, and CSS/JS comments. Disable with `-m` for debugging.
+
+- **Auto-reload**:
+  When using `-w` or `-s`, fssg injects a script that polls `/.reload` to trigger browser refreshes on changes.
+
+- **Server Selection**:
+  The `-s` flag prefers a local `./mongoose` binary, then system `mongoose`, then falls back to Python's HTTP server.
+
+- **Parallel Processing**:
+  Pages are processed in parallel child processes with configurable concurrency (default: 100).
 
 For full details, see the [fssg Documentation Website](https://xlc-dev.github.io/fssg/).
-
----
 
 ## License
 

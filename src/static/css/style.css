@@ -419,64 +419,13 @@ pre[class*="language-"] {
   overflow: auto;
 }
 
-.token.comment,
-.token.prolog,
-.token.doctype,
-.token.cdata {
-  color: #6c757d;
-  font-style: italic;
+/* Remove syntax highlighting colors - all tokens inherit the default text color */
+.token {
+  color: inherit;
 }
 
-.token.punctuation {
-  color: #6c757d;
-}
-
-.token.property,
-.token.tag,
-.token.boolean,
-.token.number,
-.token.constant,
-.token.symbol {
-  color: #c9480c;
-}
-
-.token.selector,
-.token.attr-name,
-.token.string,
-.token.char,
-.token.builtin,
-.token.inserted,
-.token.deleted {
-  color: var(--secondary-color);
-}
-
-.token.operator,
-.token.entity,
-.token.url,
-.language-css .token.string,
-.style .token.string,
-.token.variable {
-  color: #3d3d3d;
-}
-
-.token.atrule,
-.token.attr-value,
-.token.function,
-.token.class-name {
-  color: var(--primary-color);
-}
-
-.token.keyword {
-  color: #9d4edd;
-}
-
-.token.regex,
+/* Preserve bold and italic styling */
 .token.important {
-  color: #d9480f;
-}
-
-.token.important,
-.token.bold {
   font-weight: bold;
 }
 
@@ -484,34 +433,9 @@ pre[class*="language-"] {
   font-style: italic;
 }
 
-.token.entity {
-  cursor: help;
-}
-
-.language-bash .token.keyword {
-  color: #c9480c;
-}
-.language-bash .token.command,
-.language-bash .token.subcommand {
-  color: #9d4edd;
-}
-.language-bash .token.option {
-  color: var(--primary-color);
-}
-.language-bash .token.value,
-.language-bash .token.string,
-.language-bash .token.attr-value {
-  color: var(--secondary-color);
-}
-.language-bash .token.placeholder {
-  color: #6c757d;
-  font-style: italic;
-}
-.language-bash .token.attr-name {
-  color: var(--primary-color);
-}
-.language-bash .token.operator {
-  color: #3d3d3d;
+/* Remove all language-specific syntax highlighting */
+.language-bash .token {
+  color: inherit;
 }
 
 @media (max-width: 992px) {

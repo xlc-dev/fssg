@@ -3,21 +3,26 @@
 <main>
   <section class="hero">
     <div class="container">
-      <img src="/static/img/logo.png" alt="fssg Logo" class="logo" />
+      <img
+        src="{{BASE_URL}}/static/img/logo.png"
+        alt="fssg Logo"
+        class="logo"
+      />
       <h1>fssg</h1>
-      <p class="tagline">Blazing Fast. Pure Shell. Zero Fuss.</p>
+      <p class="tagline">Tiny, dependency-free static site generator</p>
+
       <p class="description">
-        A minimal, blazing fast static site generator built entirely with POSIX
-        shell. Transform Markdown and HTML into a complete statically built
-        website with powerful features, no complex dependencies.
+        Convert Markdown and html into a deployable site with just pure POSIX shell.
       </p>
+
       <div class="cta-buttons">
         <a
           href="https://github.com/xlc-dev/fssg"
           target="_blank"
           class="btn btn-primary"
-          >View on GitHub</a
         >
+          View on GitHub
+        </a>
         <a href="#quick-start" class="btn btn-secondary">Get Started</a>
       </div>
     </div>
@@ -26,13 +31,14 @@
   <section id="why-fssg" class="feature-showcase-section reveal">
     <div class="container">
       <h2>Why Choose fssg?</h2>
+
       <div class="feature-showcase-item">
         <div class="feature-text">
-          <h3>Radical Simplicity. Run Anywhere.</h3>
+          <h3>Run Anywhere</h3>
           <p>
-            With zero dependencies beyond a standard POSIX shell, fssg is the
-            ultimate portable generator. No Node.js, no package manager, no
-            complex toolchain. Just your content and a single script.
+            If you have a POSIX shell and an awk implementation, fssg runs. No
+            Node, no package managers — just one script you can drop into a
+            project.
           </p>
         </div>
         <div class="feature-visual">
@@ -43,31 +49,33 @@
     └── template.html</code></pre>
         </div>
       </div>
+
       <div class="feature-showcase-item">
         <div class="feature-text">
-          <h3>Pure Shell, Peak Performance.</h3>
+          <h3>Fast & Parallel</h3>
           <p>
-            By leveraging the raw power of shell and optimized `awk` scripts,
-            fssg builds sites at incredible speeds. Parallel processing is built
-            in, allowing you to scale to hundreds of pages without the wait.
-            Instantaneous builds become the norm.
+            Rendering is handled with optimized AWK routines; pages are
+            processed in parallel child processes. The default concurrency is
+            100 so large sites build quickly.
           </p>
         </div>
         <div class="feature-visual">
-          <pre><code class="language-bash">./fssg <span class="token option">-j</span> <span class="token value">100</span></code></pre>
+          <pre><code class="language-bash">./fssg -j 100</code></pre>
         </div>
       </div>
+
       <div class="feature-showcase-item">
         <div class="feature-text">
-          <h3>Everything You Need, Nothing You Don't.</h3>
+          <h3>Simple, Focused Tooling</h3>
           <p>
-            A complete development workflow is included out-of-the-box. The
-            built-in file watcher, dev server, and automatic browser opening
-            provide a modern, seamless experience without any external tools.
+            Built-in watcher, optional dev server and autoreload script give a
+            modern workflow without adding dependencies. Server selection
+            prefers a local ./mongoose binary, then system mongoose, then
+            python3 / python. You can override the exact server command.
           </p>
         </div>
         <div class="feature-visual">
-          <pre><code class="language-bash">./fssg <span class="token option">-j</span> <span class="token value">100</span> <span class="token option">-s</span> <span class="token option">-w</span> <span class="token option">-o</span></code></pre>
+          <pre><code class="language-bash">./fssg -j 100 -s -w -o</code></pre>
         </div>
       </div>
     </div>
@@ -76,82 +84,89 @@
   <section id="quick-start" class="quick-start-section reveal">
     <div class="container">
       <h2>Quick Start Guide</h2>
+
       <div class="steps-container">
         <div class="step">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h3>Setup Your Project</h3>
+            <h3>Install</h3>
             <p>
-              You can either download just the script or clone the entire
-              repository if you want the optional <code>mongoose</code> dev
-              server.
+              Download the single script or clone the repo if you want the
+              optional mongoose dev-server binaries.
             </p>
-            <p>
-              <strong>Option A:</strong> Download only the
-              <code>fssg</code> script.
-            </p>
-            <div class="code-block-wrapper">
-              <pre><code class="language-bash"><span class="token command">wget</span> <span class="token value">https://raw.githubusercontent.com/xlc-dev/fssg/main/fssg</span>
-<span class="token command">chmod</span> <span class="token option">+x</span> <span class="token value">fssg</span></code></pre>
-            </div>
-            <p>
-              <strong>Option B:</strong> Clone the full project, then grab just
-              the <code>mongoose</code> folder and the <code>fssg</code> script.
-            </p>
-            <div class="code-block-wrapper">
-              <pre><code class="language-bash"><span class="token command">git</span> <span class="token subcommand">clone</span> <span class="token value">https://github.com/xlc-dev/fssg.git</span>
-<span class="token command">mkdir</span> <span class="token value">mysite</span>
-<span class="token command">cd</span> <span class="token value">mysite</span>
 
-<span class="token command">cp</span> <span class="token value">../fssg/fssg .</span>
-<span class="token command">cp</span> <span class="token option">-r</span> <span class="token value">../fssg/mongoose .</span></code></pre>
+            <p><strong>Option A: script only</strong></p>
+            <div class="code-block-wrapper">
+              <pre><code class="language-bash">wget https://raw.githubusercontent.com/xlc-dev/fssg/main/fssg
+chmod +x fssg</code></pre>
             </div>
+
+            <p><strong>Option B: clone (and copy what you need)</strong></p>
+            <div class="code-block-wrapper">
+              <pre><code class="language-bash">git clone https://github.com/xlc-dev/fssg.git
+mkdir mysite && cd mysite
+cp ../fssg/fssg .
+cp -r ../fssg/mongoose .</code></pre>
+            </div>
+
+            <p class="muted">
+              fssg requires an awk available on PATH. To use a specific awk, set
+              <code>FSSG_AWK</code> (for example <code>FSSG_AWK=gawk</code>).
+            </p>
           </div>
         </div>
+
         <div class="step">
           <div class="step-number">2</div>
           <div class="step-content">
             <h3>Create Content</h3>
             <p>
-              Create a master <code>template.html</code> and your first page,
-              <code>index.md</code>. fssg will inject the content from
-              `index.md` into the template.
+              Put your template at <code>src/template.html</code> and your pages
+              under <code>src/</code> as <code>.md</code> or <code>.html</code>.
+              fssg injects processed page content into the master template at
+              <code>&#123;&#123;content&#125;&#125;</code>.
             </p>
-            <p><code>src/template.html</code>:</p>
+
+            <p><strong>Example: src/template.html</strong></p>
             <div class="code-block-wrapper">
-              <pre><code class="language-html"><span class="token tag"><span class="token punctuation">&lt;!</span><span class="token doctype-tag">DOCTYPE</span> <span class="token name">html</span><span class="token punctuation">&gt;</span></span>
-<span class="token tag"><span class="token punctuation">&lt;</span>html<span class="token punctuation">&gt;</span></span>
-<span class="token tag"><span class="token punctuation">&lt;</span>head<span class="token punctuation">&gt;</span></span>
-  <span class="token tag"><span class="token punctuation">&lt;</span>title<span class="token punctuation">&gt;</span></span>&#123;&#123;title&#125;&#125;<span class="token tag"><span class="token punctuation">&lt;/</span>title<span class="token punctuation">&gt;</span></span>
-<span class="token tag"><span class="token punctuation">&lt;/</span>head<span class="token punctuation">&gt;</span></span>
-<span class="token tag"><span class="token punctuation">&lt;</span>body<span class="token punctuation">&gt;</span></span>
+              <pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;meta name="viewport" content="width=device-width,initial-scale=1"&gt;
+  &lt;title&gt;&#123;&#123;title&#125;&#125;&lt;/title&gt;
+  &lt;link rel="stylesheet" href="&#123;&#123;BASE_URL&#125;&#125;/static/css/styles.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
   &#123;&#123;content&#125;&#125;
-<span class="token tag"><span class="token punctuation">&lt;/</span>body<span class="token punctuation">&gt;</span></span>
-<span class="token tag"><span class="token punctuation">&lt;/</span>html<span class="token punctuation">&gt;</span></span></code></pre>
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
             </div>
-            <p><code>src/index.md</code> (or use html):</p>
+
+            <p><strong>Example: src/index.md</strong></p>
             <div class="code-block-wrapper">
-              <pre><code class="language-markdown"><span class="token heading"><span class="token punctuation">#</span> Hello, World!</span>
+              <pre><code class="language-markdown"># Hello, World!
 
 This is my first page built with fssg.</code></pre>
             </div>
           </div>
         </div>
+
         <div class="step">
           <div class="step-number">3</div>
           <div class="step-content">
             <h3>Build & Preview</h3>
             <p>
-              Run the development command. This builds the site, starts a
-              server, watches for changes, and opens your browser.
+              Build the site and (optionally) start the dev server and watcher:
             </p>
             <div class="code-block-wrapper">
-              <pre><code class="language-bash">./fssg <span class="token option">-j</span> <span class="token value">100</span> <span class="token option">-s</span> <span class="token option">-w</span> <span class="token option">-o</span></code></pre>
+              <pre><code class="language-bash">./fssg -s -w -o</code></pre>
             </div>
             <p>
-              Your new site is now running at
-              <code>http://localhost:8000</code>! For a deep dive into all
-              features, see the documentation below.
+              Default dev-server port is <code>8000</code> (override via
+              <code>FSSG_SERVER_PORT</code>). When watching or serving fssg
+              writes <code>dist/.reload</code> and injects a small autoreload
+              client that polls <code>/.reload</code> to trigger reloads.
             </p>
           </div>
         </div>
@@ -161,7 +176,8 @@ This is my first page built with fssg.</code></pre>
 
   <section id="documentation" class="documentation-section reveal">
     <div class="container">
-      <h2>Features Deep Dive</h2>
+      <h2>Features & Documentation</h2>
+
       <div class="docs-container">
         <ul class="doc-tabs">
           <li class="doc-tab active" data-tab="cli">CLI</li>
@@ -169,53 +185,81 @@ This is my first page built with fssg.</code></pre>
           <li class="doc-tab" data-tab="templating">Templating</li>
           <li class="doc-tab" data-tab="content">Content & Assets</li>
           <li class="doc-tab" data-tab="conditionals">Conditionals</li>
-          <li class="doc-tab" data-tab="posts">Post Listings</li>
+          <li class="doc-tab" data-tab="server">Server & Watch</li>
         </ul>
+
         <div class="doc-content-panels">
           <div class="doc-panel active" id="cli">
             <article>
               <h3>Command-Line Interface</h3>
-              <p>
-                The <code>fssg</code> script is controlled via command-line
-                flags.
-              </p>
+
               <div class="code-block-wrapper">
-                <pre><code class="language-bash">./fssg <span class="token placeholder">[options]</span></code></pre>
+                <pre><code class="language-bash">./fssg [options]</code></pre>
               </div>
+
+              <ul>
+                <li><code>-h, --help</code>: Show help and exit.</li>
+                <li>
+                  <code>-V, --version</code>: Print the script's version and
+                  exit.
+                </li>
+                <li>
+                  <code>-q, --quiet</code>: Suppress informational output
+                  (errors still shown).
+                </li>
+                <li>
+                  <code>-v, --verbose</code>: Enable verbose debug logging.
+                </li>
+                <li>
+                  <code>-n, --nocolor</code>: Disable ANSI color sequences in
+                  messages.
+                </li>
+                <li>
+                  <code>-w, --watch</code>: Watch the <code>src/</code> tree and
+                  rebuild on changes.
+                </li>
+                <li>
+                  <code>-s, --serve</code>: Start a dev server for
+                  <code>dist/</code>. fssg prefers a local
+                  <code>./mongoose</code> binary, then system
+                  <code>mongoose</code>, then <code>python3</code>, then
+                  <code>python</code>.
+                </li>
+                <li>
+                  <code>-o, --open</code>: Open the browser after starting the
+                  server (use with -s).
+                </li>
+                <li>
+                  <code>-m, --minify</code>: Disable the HTML minifier
+                  (minification is enabled by default). This flag turns
+                  minification off for debugging.
+                </li>
+                <li>
+                  <code>-j &lt;num&gt;</code>: Number of parallel build jobs
+                  (default: 100).
+                </li>
+              </ul>
+
+              <h4>Environment variables</h4>
               <ul>
                 <li>
-                  <code>-h, --help</code>: Display the help message and exit.
+                  <code>FSSG_BASE_URL</code>: Base URL value that fssg
+                  substitutes for
+                  <code>&#123;&#123;BASE_URL&#125;&#125;</code> inside templates
+                  and includes at build time. (Default: empty string, which
+                  yields root-relative paths.)
                 </li>
                 <li>
-                  <code>-q, --quiet</code>: Suppress all informational output,
-                  showing only errors. Overrides <code>-v</code>.
+                  <code>FSSG_SERVER_CMD</code>: Override the dev-server command
+                  used by <code>-s</code>.
                 </li>
                 <li>
-                  <code>-v, --verbose</code>: Show detailed per-file processing
-                  information.
+                  <code>FSSG_SERVER_PORT</code>: Port used by the dev server
+                  (default: 8000).
                 </li>
                 <li>
-                  <code>-n, --nocolor</code>: Disable colored terminal output.
-                </li>
-                <li>
-                  <code>-w, --watch</code>: After the initial build, watch the
-                  <code>src/</code> directory for changes and automatically
-                  trigger a rebuild.
-                </li>
-                <li>
-                  <code>-s, --serve</code>: Start a local web server for the
-                  <code>dist/</code> directory on port 8000. Requires the
-                  <code>mongoose/</code> binaries.
-                </li>
-                <li>
-                  <code>-o, --open</code>: Automatically open a web browser to
-                  the local server address. Only works when <code>-s</code> is
-                  also used.
-                </li>
-                <li>
-                  <code>-j &lt;number&gt;</code>: Set the number of parallel
-                  build jobs to run. Defaults to 4. Increase for faster builds
-                  on multi-core systems.
+                  <code>FSSG_AWK</code> / <code>FSSG_AWK_OPTS</code>: Customize
+                  the awk program and options.
                 </li>
               </ul>
             </article>
@@ -224,46 +268,41 @@ This is my first page built with fssg.</code></pre>
           <div class="doc-panel" id="structure">
             <article>
               <h3>Project Structure</h3>
-              <p>
-                fssg expects a specific directory layout to function correctly.
-                This forces the same structure everywhere, making it easier to
-                switch between different projects.
-              </p>
+
               <div class="code-block-wrapper">
                 <pre><code class="language-bash">.
 ├── fssg
 ├── mongoose/
 │   ├── mongoose_linux
-│   ├── mongoose_mac
+│   ├── mongoose_macos
 │   └── mongoose_windows.exe
 └── src/
     ├── includes/
-    │   └── footer.html
     ├── static/
-    │   ├── css/
-    │   └── img/
     ├── template.html
     ├── index.md
-    └── about.html
-</code></pre>
+    └── about.html</code></pre>
               </div>
+
               <ul>
-                <li><code>src/</code>: The root for all source content.</li>
+                <li><code>src/</code>: Source files (Markdown and HTML).</li>
                 <li>
-                  <code>src/template.html</code>: The master template required
-                  for all pages.
+                  <code>mongoose/</code>: Optional dev-server executables.
                 </li>
                 <li>
-                  <code>src/includes/</code>: A reserved directory for HTML
-                  snippets that can be included in other files.
+                  <code>src/template.html</code>: Master layout. Must include
+                  <code>&#123;&#123;content&#125;&#125;</code>.
                 </li>
                 <li>
-                  <code>src/static/</code>: All contents of this directory are
-                  copied directly to <code>dist/static/</code>.
+                  <code>src/includes/</code>: Reusable snippets (use
+                  <code>&#123;&#123;include: ...&#125;&#125;</code>).
                 </li>
                 <li>
-                  <code>dist/</code>: The output directory where the generated
-                  site is placed. This is created automatically.
+                  <code>src/static/</code>: Copied to
+                  <code>dist/static/</code> unchanged.
+                </li>
+                <li>
+                  <code>dist/</code>: Generated site output (created by fssg).
                 </li>
               </ul>
             </article>
@@ -271,223 +310,226 @@ This is my first page built with fssg.</code></pre>
 
           <div class="doc-panel" id="templating">
             <article>
-              <h3>Templating System</h3>
-              <p>
-                fssg uses a simple but powerful text-based templating system.
-              </p>
-              <h4>Global Template</h4>
-              <p>
-                The file <code>src/template.html</code> is the master layout. It
-                must contain <code>&#123;&#123;content&#125;&#125;</code>, which
-                acts as the placeholder for each page's processed content. It
-                can also contain <code>&#123;&#123;title&#125;&#125;</code>.
-              </p>
-              <h4>Title Variable</h4>
-              <p>The page title is determined with the following priority:</p>
+              <h3>Templating & Title Rules</h3>
+
+              <h4>Title precedence</h4>
+              <p>The title is chosen by these rules (highest → lowest):</p>
               <ol>
                 <li>
-                  An explicit
-                  <code>&#123;&#123;title: My Page Title&#125;&#125;</code>
-                  tag anywhere in the page's content file.
+                  An explicit title directive inside the source file:
+                  <code>&#123;&#123;title: My Page&#125;&#125;</code> (this is
+                  removed from the rendered content and becomes the page title).
                 </li>
                 <li>
-                  If not found, the title is generated from the filename (e.g.,
-                  <code>my-first-post.md</code> becomes "My First Post").
+                  If none present, a title is generated from the filename:
+                  hyphens become spaces and each word is capitalized.
                 </li>
               </ol>
-              <h4>Simple Includes</h4>
+
+              <p>Examples:</p>
+              <ul>
+                <li><code>src/my-first-post.md</code> → "My First Post"</li>
+                <li>
+                  <code>src/2025-10-06-my-post.md</code> → "2025 10 06 My Post"
+                  (the date prefix is not stripped)
+                </li>
+                <li>
+                  <code>src/my_first_post.md</code> → "My_first_post"
+                  (underscores kept)
+                </li>
+              </ul>
+
+              <p class="muted">Implementation caveats:</p>
+              <ul>
+                <li>
+                  fssg searches only the primary source file for the title
+                  directive. A <code>title</code> inside an included file will
+                  not set the page title.
+                </li>
+                <li>
+                  The extracted title is taken as-is by the code that finds it
+                  (no extra trimming), so keep the directive line clean.
+                </li>
+              </ul>
+
+              <h4>Includes</h4>
+              <p>Simple include from <code>src/includes/</code>:</p>
+              <div class="code-block-wrapper">
+                <pre><code class="language-bash">&#123;&#123;include: footer.html&#125;&#125;</code></pre>
+              </div>
+
+              <h4>Include-blocks with parameters</h4>
               <p>
-                To embed a file from <code>src/includes/</code>, use the include
-                directive.
+                Pass named parameters and a content block to an include. Inside
+                the include file use
+                <code>&#123;&#123;content&#125;&#125;</code>
+                to inject the provided block. If you pass
+                <code>markdown="true"</code> (or <code>markdown=1</code>), the
+                block is converted to HTML before injection.
               </p>
+
               <div class="code-block-wrapper">
-                <pre><code class="language-bash"><span class="token punctuation">&#123;&#123;</span><span class="token keyword">include:</span> <span class="token string">footer.html</span><span class="token punctuation">&#125;&#125;</span></code></pre>
+                <pre><code class="language-bash">&#123;&#123;include-block: alert.html type="warning" alert_title="Attention" markdown="true"&#125;&#125;
+This is **Markdown** content inside the block.
+&#123;&#123;endinclude&#125;&#125;</code></pre>
               </div>
-              <h4>Block Includes with Parameters</h4>
-              <p>
-                For more complex components, you can pass parameters and a block
-                of content to an include. The content you provide is injected
-                wherever
-                <code>&#123;&#123;content&#125;&#125;</code> appears inside the
-                include file.
+
+              <p class="muted">
+                If an include-block with <code>markdown="true"</code>
+                produces a full HTML document (contains a DOCTYPE or an
+                <code>&lt;html&gt;</code>
+                tag), fssg treats the page as pre-rendered HTML and skips the
+                page-level Markdown pass.
               </p>
-              <p>Example <code>src/includes/alert.html</code>:</p>
-              <div class="code-block-wrapper">
-                <pre><code class="language-html"><span class="token tag"><span class="token punctuation">&lt;</span>div <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation">=</span>"alert alert-&#123;&#123;type&#125;&#125;"</span><span class="token punctuation">&gt;</span></span>
-  <span class="token tag"><span class="token punctuation">&lt;</span>strong<span class="token punctuation">&gt;</span></span>&#123;&#123;alert_title&#125;&#125;:<span class="token tag"><span class="token punctuation">&lt;/</span>strong<span class="token punctuation">&gt;</span></span>
-  &#123;&#123;content&#125;&#125;
-<span class="token tag"><span class="token punctuation">&lt;/</span>div<span class="token punctuation">&gt;</span></span></code></pre>
-              </div>
-              <p>Usage in a page:</p>
-              <div class="code-block-wrapper">
-                <pre><code class="language-bash"><span class="token punctuation">&#123;&#123;</span><span class="token keyword">include-block:</span> <span class="token string">alert.html</span> <span class="token attr-name">type</span><span class="token operator">=</span><span class="token attr-value">"warning"</span> <span class="token attr-name">alert_title</span><span class="token operator">=</span><span class="token attr-value">"Attention"</span><span class="token punctuation">&#125;&#125;</span>
-  <span class="token tag"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>This is an important message.<span class="token tag"><span class="token punctuation">&lt;/</span>p<span class="token punctuation">&gt;</span></span>
-<span class="token punctuation">&#123;&#123;</span><span class="token keyword">endinclude</span><span class="token punctuation">&#125;&#125;</span></code></pre>
-              </div>
             </article>
           </div>
 
           <div class="doc-panel" id="content">
             <article>
-              <h3>Content Processing</h3>
-              <h4>Markdown Parser</h4>
+              <h3>Content Processing & Assets</h3>
+
+              <h4>Markdown support</h4>
               <p>
-                fssg uses a capable <code>awk</code>-based Markdown parser with
-                support for a wide range of features:
+                fssg includes an AWK-based Markdown parser with support for:
               </p>
               <ul>
-                <li>Headings (<code># H1</code> to <code>###### H6</code>)</li>
-                <li>Paragraphs (automatic <code>&lt;p&gt;</code> wrapping)</li>
+                <li>Headings, paragraphs, and raw HTML passthrough</li>
+                <li>Blockquotes, fenced code blocks and inline code</li>
+                <li>Lists (unordered/ordered), links, images</li>
+                <li>Bold/italic/strikethrough, horizontal rules</li>
+                <li>Tables (pipe-style)</li>
+              </ul>
+
+              <h4>Static assets</h4>
+              <p>
+                Everything under <code>src/static/</code> is copied to
+                <code>dist/static/</code> unchanged. Use
+                <code>&#123;&#123;BASE_URL&#125;&#125;</code> in templates to
+                build correct deploy-time prefixes — in documentation examples
+                encode the braces as
+                <code>&#123;&#123;BASE_URL&#125;&#125;</code>
+                so they appear literally in the generated docs.
+              </p>
+
+              <h4>Style & script hoisting</h4>
+              <p>
+                fssg collects <code>&lt;style&gt;...&lt;/style&gt;</code>
+                blocks and emits them immediately before the closing
+                <code>&lt;/head&gt;</code>, and collects
+                <code>&lt;script&gt;...&lt;/script&gt;</code> blocks and emits
+                them immediately before the closing <code>&lt;/body&gt;</code>.
+                The discovery order is preserved. fssg does not deduplicate
+                identical blocks.
+              </p>
+
+              <h4>Minification</h4>
+              <p>Minification is enabled by default. The minifier:</p>
+              <ul>
+                <li>Removes HTML comments and extra whitespace</li>
+                <li>Cleans attribute whitespace inside tags</li>
+                <li>Preserves <code>&lt;pre&gt;</code> blocks verbatim</li>
                 <li>
-                  Raw HTML passthrough (lines that start with
-                  <code>&lt;...&gt;</code>)
-                </li>
-                <li>Blockquotes (<code>&gt; quote</code>)</li>
-                <li>
-                  Unordered Lists (<code>*</code>, <code>-</code>,
-                  <code>+</code>) and Ordered Lists (<code>1.</code>,
-                  <code>2.</code>, ...)
-                </li>
-                <li>
-                  Fenced Code Blocks (<code>```lang</code> ... <code>```</code>)
-                  and Inline Code (<code>`code`</code>)
-                </li>
-                <li>Links (<code>[text](url)</code>)</li>
-                <li>Images (<code>![alt text](src)</code>)</li>
-                <li>
-                  Emphasis: Bold (<code>**text**</code>), Italic
-                  (<code>*text*</code>), Strikethrough (<code>~~text~~</code>)
-                </li>
-                <li>
-                  Horizontal Rules (<code>---</code>, <code>***</code>,
-                  <code>___</code>)
-                </li>
-                <li>
-                  Tables (GitHub-style with pipes: <code>| a | b |</code>)
+                  Strips CSS and JS comments inside hoisted
+                  <code>&lt;style&gt;</code> and
+                  <code>&lt;script&gt;</code> blocks
                 </li>
               </ul>
-              <h4>Asset Pipeline</h4>
-              <p>
-                All files and directories inside <code>src/static/</code> are
-                copied recursively to <code>dist/static/</code>.
+              <p class="muted">
+                Use <code>-m</code> to disable minification while debugging.
               </p>
-              <h4>Style & Script Hoisting</h4>
+
+              <h4>Auto-reload</h4>
               <p>
-                A powerful optimization feature: all
-                <code>&lt;style&gt;...&lt;/style&gt;</code> and
-                <code>&lt;script&gt;...&lt;/script&gt;</code> blocks from your
-                page content are automatically extracted, deduplicated, and
-                moved. Styles are placed just before the closing
-                <code>&lt;/head&gt;</code> tag, and scripts are placed just
-                before the closing <code>&lt;/body&gt;</code> tag. This improves
-                rendering performance and helps organize page-specific code.
+                When using the watcher or serving, fssg writes a timestamp into
+                <code>dist/.reload</code> and injects a small client script that
+                polls <code>/.reload</code>. If you host your built site under a
+                subpath, ensure the dev server exposes <code>/.reload</code>, or
+                override the server with <code>FSSG_SERVER_CMD</code>.
               </p>
             </article>
           </div>
 
           <div class="doc-panel" id="conditionals">
             <article>
-              <h3>Conditional Logic</h3>
+              <h3>Conditionals</h3>
               <p>
-                You can render content conditionally based on the page being
-                built. This is useful in shared templates or includes.
+                fssg supports simple conditional blocks using exact string
+                equality. Use <code>IF_PAGE</code> / <code>ELIF_PAGE</code> /
+                <code>ELSE_PAGE</code> / <code>ENDIF_PAGE</code> to test the
+                output path (relative to <code>dist/</code>), or
+                <code>IF_EXT</code> / <code>ELIF_EXT</code> /
+                <code>ELSE_EXT</code> / <code>ENDIF_EXT</code> to test the
+                source file extension.
               </p>
 
-              <h4>By Output Page Path</h4>
-              <p>
-                Render content only if the output file path matches. The path is
-                relative to the <code>dist/</code> directory (e.g.,
-                <code>index.html</code>, <code>blog/my-post.html</code>).
-              </p>
+              <h4>By output page path</h4>
               <div class="code-block-wrapper">
-                <pre><code class="language-bash"><span class="token punctuation">&#123;&#123;</span><span class="token keyword">IF_PAGE:</span> <span class="token string">index.html</span><span class="token punctuation">&#125;&#125;</span>
-  <span class="token tag"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>Only for the homepage.<span class="token tag"><span class="token punctuation">&lt;/</span>p<span class="token punctuation">&gt;</span></span>
-<span class="token punctuation">&#123;&#123;</span><span class="token keyword">ELIF_PAGE:</span> <span class="token string">about.html</span><span class="token punctuation">&#125;&#125;</span>
-  <span class="token tag"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>Only for the about page.<span class="token tag"><span class="token punctuation">&lt;/</span>p<span class="token punctuation">&gt;</span></span>
-<span class="token punctuation">&#123;&#123;</span><span class="token keyword">ELSE_PAGE</span><span class="token punctuation">&#125;&#125;</span>
-  <span class="token tag"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>For all other pages.<span class="token tag"><span class="token punctuation">&lt;/</span>p<span class="token punctuation">&gt;</span></span>
-<span class="token punctuation">&#123;&#123;</span><span class="token keyword">ENDIF_PAGE</span><span class="token punctuation">&#125;&#125;</span></code></pre>
+                <pre><code class="language-bash">&#123;&#123;IF_PAGE: index.html&#125;&#125;
+  &lt;p&gt;Only for the homepage.&lt;/p&gt;
+&#123;&#123;ELIF_PAGE: about.html&#125;&#125;
+  &lt;p&gt;Only for the about page.&lt;/p&gt;
+&#123;&#123;ELSE_PAGE&#125;&#125;
+  &lt;p&gt;For all other pages.&lt;/p&gt;
+&#123;&#123;ENDIF_PAGE&#125;&#125;</code></pre>
               </div>
 
-              <h4>By Source File Extension</h4>
-              <p>
-                Render content based on the source file’s extension
-                (<code>md</code>, <code>html</code>, or any other).
-              </p>
+              <h4>By source extension</h4>
               <div class="code-block-wrapper">
-                <pre><code class="language-bash"><span class="token punctuation">&#123;&#123;</span><span class="token keyword">IF_EXT:</span> <span class="token string">md</span><span class="token punctuation">&#125;&#125;</span>
-  <span class="token tag"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>This content was originally a Markdown file.<span class="token tag"><span class="token punctuation">&lt;/</span>p<span class="token punctuation">&gt;</span></span>
-<span class="token punctuation">&#123;&#123;</span><span class="token keyword">ELIF_EXT:</span> <span class="token string">html</span><span class="token punctuation">&#125;&#125;</span>
-  <span class="token tag"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>This content was originally an HTML file.<span class="token tag"><span class="token punctuation">&lt;/</span>p<span class="token punctuation">&gt;</span></span>
-<span class="token punctuation">&#123;&#123;</span><span class="token keyword">ELSE_EXT</span><span class="token punctuation">&#125;&#125;</span>
-  <span class="token tag"><span class="token punctuation">&lt;</span>p<span class="token punctuation">&gt;</span></span>This content came from another source format.<span class="token tag"><span class="token punctuation">&lt;/</span>p<span class="token punctuation">&gt;</span></span>
-<span class="token punctuation">&#123;&#123;</span><span class="token keyword">ENDIF_EXT</span><span class="token punctuation">&#125;&#125;</span></code></pre>
+                <pre><code class="language-bash">&#123;&#123;IF_EXT: md&#125;&#125;
+  &lt;p&gt;This content was originally Markdown.&lt;/p&gt;
+&#123;&#123;ELIF_EXT: html&#125;&#125;
+  &lt;p&gt;This content was originally HTML.&lt;/p&gt;
+&#123;&#123;ELSE_EXT&#125;&#125;
+  &lt;p&gt;Other source formats.&lt;/p&gt;
+&#123;&#123;ENDIF_EXT&#125;&#125;</code></pre>
               </div>
+
+              <p class="muted">
+                Conditions are evaluated during template processing. They match
+                exact strings, no globs or regexes and support nesting.
+              </p>
             </article>
           </div>
 
-          <div class="doc-panel" id="posts">
+          <div class="doc-panel" id="server">
             <article>
-              <h3>Automated Post Listings</h3>
-              <p>
-                fssg can automatically generate lists of posts. To be recognized
-                as a post, a file must be named with a date prefix like
-                <code>YYYY-MM-DD-your-post-slug.md</code>.
-              </p>
-              <h4>Recent Posts</h4>
-              <p>Displays a simple list of the most recent posts.</p>
-              <div class="code-block-wrapper">
-                <pre><code class="language-bash"><span class="token punctuation">&#123;&#123;</span><span class="token keyword">recent-posts</span> <span class="token attr-name">count</span><span class="token operator">=</span><span class="token attr-value">"3"</span> <span class="token attr-name">show_images</span><span class="token operator">=</span><span class="token attr-value">"true"</span><span class="token punctuation">&#125;&#125;</span></code></pre>
-              </div>
-              <h4>All Posts (with Pagination)</h4>
-              <p>
-                Generates a list of all posts, typically for an archive page,
-                with optional pagination.
-              </p>
-              <div class="code-block-wrapper">
-                <pre><code class="language-bash"><span class="token punctuation">&#123;&#123;</span><span class="token keyword">all-posts</span> <span class="token attr-name">page_size</span><span class="token operator">=</span><span class="token attr-value">"5"</span> <span class="token attr-name">pagination</span><span class="token operator">=</span><span class="token attr-value">"true"</span><span class="token punctuation">&#125;&#125;</span></code></pre>
-              </div>
-              <h4>Available Parameters</h4>
-              <ul>
-                <li>
-                  <code>count</code> / <code>page_size</code>: Number of posts
-                  to show.
-                </li>
-                <li>
-                  <code>page</code>: The current page number for pagination.
-                </li>
-                <li>
-                  <code>pagination</code>: Set to "true" to show pagination
-                  links.
-                </li>
-                <li>
-                  <code>show_images</code>: Set to "true" to include post
-                  images.
-                </li>
-                <li>
-                  <code>ul_class</code>, <code>li_class</code>,
-                  <code>time_class</code>, <code>link_class</code>,
-                  <code>img_class</code>: Customize the CSS classes of the
-                  generated HTML elements.
-                </li>
-              </ul>
-              <h4>Post Image Logic</h4>
-              <p>
-                When <code>show_images="true"</code>, fssg finds an image using
-                this priority:
-              </p>
+              <h3>Server, Watcher & Overrides</h3>
+
+              <h4>Dev server selection</h4>
+              <p>When <code>-s</code> is used to serve:</p>
               <ol>
                 <li>
-                  The <code>src</code> of the first <code>&lt;img&gt;</code> tag
-                  found in the post's content.
+                  If <code>FSSG_SERVER_CMD</code> is set, fssg runs that command
+                  verbatim.
                 </li>
                 <li>
-                  If no image is in the content, it looks for a fallback image
-                  at
-                  <code>src/static/posts/&lt;slug&gt;.jpg</code> (or .png, .gif,
-                  etc.).
+                  If a local <code>./mongoose</code> directory exists, fssg
+                  looks for a platform-specific executable and runs it with
+                  <code>-d dist/ -v 0</code>.
+                </li>
+                <li>If <code>mongoose</code> is in PATH it will be used.</li>
+                <li>
+                  Otherwise fssg falls back to
+                  <code>python3 -m http.server &lt;port&gt;</code> or
+                  <code>python -m SimpleHTTPServer &lt;port&gt;</code>.
                 </li>
               </ol>
+
+              <h4>Watcher</h4>
+              <p>
+                The watcher computes a checksum snapshot of all files in
+                <code>src/</code>
+                and triggers a rebuild when the snapshot changes. It is portable
+                and doesn't require platform-specific file-watching APIs.
+              </p>
+
+              <h4>Open browser</h4>
+              <p>
+                Use <code>-o</code> together with <code>-s</code> to open the
+                default browser automatically (<code>open</code> on macOS,
+                <code>xdg-open</code> on Linux, or <code>start</code> on
+                Windows).
+              </p>
             </article>
           </div>
         </div>
