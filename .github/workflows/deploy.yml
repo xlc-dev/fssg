@@ -31,7 +31,7 @@ jobs:
         run: chmod +x ./fssg
 
       - name: Build Site
-        run: ./fssg
+        run: FSSG_BASE_URL="/fssg" ./fssg
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
