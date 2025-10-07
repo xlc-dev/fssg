@@ -1,8 +1,6 @@
-<img src="./src/static/img/logo.png" alt="fssg Logo" width="150" align="right">
-
 # fssg
 
-<br clear="all">
+<img src="./src/static/img/logo.png" alt="fssg Logo" width="150" align="right">
 
 **fssg** is a portable, dependency-free static site generator written entirely
 in POSIX shell and AWK. It recursively processes markdown and html
