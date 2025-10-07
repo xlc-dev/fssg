@@ -1,16 +1,10 @@
-<div style="display: flex; align-items: center; justify-content: space-between;">
-  <div style="flex: 1;">
-    <h1>fssg</h1>
-    <p><strong>fssg</strong> is a portable, dependency-free static site generator written entirely
-    in POSIX shell and AWK. It recursively processes Markdown (.md) and .html
-    files in <code>src/</code> and outputs a minified, deployable website in <code>dist/</code>.</p>
-  </div>
-  <div>
-    <a href="https://github.com/xlc-dev/fssg">
-      <img src="./src/static/img/logo.png" alt="fssg Logo" width="150">
-    </a>
-  </div>
-</div>
+<img src="./src/static/img/logo.png" alt="fssg Logo" width="150" align="right">
+
+# fssg
+
+**fssg** is a portable, dependency-free static site generator written entirely
+in POSIX shell and AWK. It recursively processes markdown and html
+files in `src/` and outputs a minified, deployable website in `dist/`.
 
 ## Table of Contents
 
@@ -80,9 +74,9 @@ chmod +x ./my-site/fssg
 2. **Write content** in `src/` as `.md` or `.html`.
 3. **Run the generator**:
 
- ```sh
- ./fssg
- ```
+```sh
+./fssg
+```
 
 4. **Browse output** in `dist/`.
 
@@ -138,7 +132,7 @@ your-project/
 
 `src/index.md`:
 
-````markdown
+```markdown
 {{title: Home}}
 
 # Welcome to My Site
@@ -197,20 +191,18 @@ Usage in a page:
 Usage in a page:
 
 ```html
-{{ include-block:alert.html type="warning" alert_title="Attention" markdown="true" }}
-  This is **Markdown** content inside the block.
-{{ endinclude }}
+{{ include-block:alert.html type="warning" alert_title="Attention"
+markdown="true" }} This is **Markdown** content inside the block. {{ endinclude
+}}
 ```
 
 ### Conditional Content
 
 ```html
 {{ IF_EXT:md }}
-  <p>This only appears in Markdown-converted pages.</p>
-{{ ENDIF_EXT }}
-
-{{ IF_PAGE:about.html }}
-  <p>This only appears in Markdown-converted pages.</p>
+<p>This only appears in Markdown-converted pages.</p>
+{{ ENDIF_EXT }} {{ IF_PAGE:about.html }}
+<p>This only appears in Markdown-converted pages.</p>
 {{ ENDIF_PAGE }}
 ```
 
@@ -249,3 +241,7 @@ For full details, see the [fssg Documentation Website](https://xlc-dev.github.io
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+```
+
+```
