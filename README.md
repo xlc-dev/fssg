@@ -1,5 +1,3 @@
-<img src="./src/static/img/logo.png" alt="fssg Logo" width="150">
-
 # fssg
 
 **fssg** is a portable, dependency-free static site generator written entirely
@@ -228,7 +226,3 @@ For full details, see the [fssg Documentation Website](https://xlc-dev.github.io
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
-```
-
-```
